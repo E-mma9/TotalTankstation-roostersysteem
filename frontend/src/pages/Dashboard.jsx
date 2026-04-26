@@ -42,23 +42,34 @@ export default function Dashboard() {
       ) : myEntries.length === 0 ? (
         <div className="card text-slate-600">Je bent deze maand niet ingeroosterd.</div>
       ) : (
-        <div className="space-y-2">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {myEntries.map((e) => (
-            <div key={e.id} className="card flex items-center justify-between">
-              <div>
-                <p className="font-medium">{formatDay(e.date)}</p>
-                <p className="text-sm text-slate-500">
-                  Dienst {e.shift.name} • {e.shift.startTime}–{e.shift.endTime}
-                  {e.status !== 'WERKEND' && (
-                    <span className="ml-2 text-amber-700">({e.status.toLowerCase()})</span>
-                  )}
-                </p>
+            <div key={e.id} className="card-compact hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-500 font-medium">
+                    {new Date(e.date).toLocaleDateString('nl-NL', { weekday: 'long' })}
+                  </p>
+                  <p className="text-2xl font-semibold tabular-nums">
+                    {new Date(e.date).getDate()}{' '}
+                    <span className="text-sm font-normal text-slate-500">
+                      {new Date(e.date).toLocaleDateString('nl-NL', { month: 'long' })}
+                    </span>
+                  </p>
+                </div>
+                <span className={`shift-pill shift-${e.shift.name}`}>{e.shift.name}</span>
               </div>
+              <p className="text-sm text-slate-600 tabular-nums mb-3">
+                {e.shift.startTime} – {e.shift.endTime}
+              </p>
+              {e.status !== 'WERKEND' && (
+                <p className="text-xs text-amber-700 mb-2">Status: {e.status.toLowerCase()}</p>
+              )}
               <Link
                 to={`/dienstruil?entry=${e.id}`}
-                className="text-sm text-brand-600 hover:underline"
+                className="text-sm text-brand-600 hover:text-brand-700 font-medium"
               >
-                Ruilen?
+                Aanbieden aan collega →
               </Link>
             </div>
           ))}

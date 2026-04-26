@@ -45,22 +45,28 @@ export default function Colleagues() {
       ) : (
         <div className="space-y-3">
           {grouped.map(([date, entries]) => (
-            <div key={date} className="card">
-              <p className="font-medium mb-2">{formatDay(date)}</p>
-              <div className="space-y-1 text-sm">
+            <div key={date} className="card-compact">
+              <p className="font-semibold mb-3 text-slate-800">{formatDay(date)}</p>
+              <div className="space-y-2">
                 {entries
                   .sort((a, b) => a.shift.startTime.localeCompare(b.shift.startTime))
                   .map((e) => {
                     const isMe = e.userId === user.id;
                     return (
-                      <div key={e.id} className="flex gap-3">
-                        <span className="font-mono text-xs bg-slate-100 px-2 py-1 rounded w-28 text-center">
-                          {e.shift.name} {e.shift.startTime}–{e.shift.endTime}
+                      <div
+                        key={e.id}
+                        className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
+                          isMe ? 'bg-brand-50 border border-brand-200' : 'bg-slate-50'
+                        }`}
+                      >
+                        <span className={`shift-pill shift-${e.shift.name} w-8`}>{e.shift.name}</span>
+                        <span className="text-xs text-slate-500 tabular-nums w-24">
+                          {e.shift.startTime}–{e.shift.endTime}
                         </span>
-                        <span className={isMe ? 'font-semibold text-brand-700' : ''}>
+                        <span className={`text-sm ${isMe ? 'font-semibold text-brand-700' : 'text-slate-700'}`}>
                           {isMe ? 'Jij' : `${e.user.firstName} ${e.user.lastName}`}
                           {e.status !== 'WERKEND' && (
-                            <span className="ml-2 text-amber-700">({e.status.toLowerCase()})</span>
+                            <span className="ml-2 text-amber-700 text-xs">({e.status.toLowerCase()})</span>
                           )}
                         </span>
                       </div>

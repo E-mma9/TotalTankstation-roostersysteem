@@ -4,17 +4,17 @@ import bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 const EMPLOYEES = [
-  { firstName: 'Filmon', lastName: 'B.' },
-  { firstName: 'Marcia', lastName: 'V.' },
-  { firstName: 'Chay', lastName: 'D.' },
-  { firstName: 'Asse', lastName: 'K.' },
-  { firstName: 'Sanne', lastName: 'M.' },
-  { firstName: 'Karin', lastName: 'P.' },
-  { firstName: 'Esrom', lastName: 'T.' },
-  { firstName: 'Manuel', lastName: 'R.' },
-  { firstName: 'Lisa', lastName: 'B.' },
-  { firstName: 'Sandy', lastName: 'L.' },
-  { firstName: 'Ginge', lastName: 'O.' },
+  { firstName: 'Filmon', lastName: 'B.', role: 'MANAGER' },
+  { firstName: 'Marcia', lastName: 'V.', role: 'MEDEWERKER' },
+  { firstName: 'Chay', lastName: 'D.', role: 'MEDEWERKER' },
+  { firstName: 'Asse', lastName: 'K.', role: 'MEDEWERKER' },
+  { firstName: 'Sanne', lastName: 'M.', role: 'MEDEWERKER' },
+  { firstName: 'Karin', lastName: 'P.', role: 'MEDEWERKER' },
+  { firstName: 'Esrom', lastName: 'T.', role: 'MEDEWERKER' },
+  { firstName: 'Manuel', lastName: 'R.', role: 'MEDEWERKER' },
+  { firstName: 'Lisa', lastName: 'B.', role: 'MEDEWERKER' },
+  { firstName: 'Sandy', lastName: 'L.', role: 'MEDEWERKER' },
+  { firstName: 'Ginge', lastName: 'O.', role: 'MEDEWERKER' },
 ];
 
 function emailFor(emp) {
@@ -32,7 +32,11 @@ async function ensureEmployees() {
     const email = emailFor(emp);
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
-      created.push(existing);
+      const u = await prisma.user.update({
+        where: { id: existing.id },
+        data: { role: emp.role, isActive: true },
+      });
+      created.push(u);
       continue;
     }
     const u = await prisma.user.create({
@@ -41,7 +45,7 @@ async function ensureEmployees() {
         passwordHash,
         firstName: emp.firstName,
         lastName: emp.lastName,
-        role: 'MEDEWERKER',
+        role: emp.role,
         isActive: true,
         mustChangePassword: false,
         employmentStartDate: new Date('2023-01-01'),
@@ -49,7 +53,8 @@ async function ensureEmployees() {
     });
     created.push(u);
   }
-  console.log(`demo: ${created.length} medewerkers aanwezig (wachtwoord: demo1234)`);
+  const managers = created.filter((u) => u.role === 'MANAGER').length;
+  console.log(`demo: ${created.length} demo-gebruikers aanwezig (${managers} manager, ${created.length - managers} medewerkers, wachtwoord: demo1234)`);
   return created;
 }
 

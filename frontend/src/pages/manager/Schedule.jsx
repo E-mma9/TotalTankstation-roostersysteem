@@ -162,48 +162,71 @@ export default function ManagerSchedule() {
           </div>
 
           <div className="overflow-x-auto card p-0">
-            <table className="min-w-full text-sm">
+            <table className="min-w-full text-sm border-separate border-spacing-0">
               <thead>
                 <tr>
-                  <th className="sticky left-0 bg-slate-100 px-3 py-2 text-left z-10">Medewerker</th>
+                  <th className="sticky left-0 bg-slate-50 px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide z-10 border-b border-slate-200">
+                    Medewerker
+                  </th>
                   {days.map((d) => (
                     <th
                       key={ymd(d)}
-                      className={`px-1 py-2 text-center font-medium ${
-                        isWeekend(d) ? 'bg-slate-100' : 'bg-white'
+                      className={`px-1 py-2 text-center border-b border-slate-200 ${
+                        isWeekend(d) ? 'bg-slate-50' : 'bg-white'
                       }`}
                     >
-                      <div className="text-xs">{d.toLocaleDateString('nl-NL', { weekday: 'short' })}</div>
-                      <div>{d.getDate()}</div>
+                      <div className={`text-[10px] font-medium uppercase ${isWeekend(d) ? 'text-slate-400' : 'text-slate-500'}`}>
+                        {d.toLocaleDateString('nl-NL', { weekday: 'short' })}
+                      </div>
+                      <div className={`text-sm font-semibold tabular-nums ${isWeekend(d) ? 'text-slate-500' : 'text-slate-800'}`}>
+                        {d.getDate()}
+                      </div>
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {activeUsers.map((u) => (
-                  <tr key={u.id} className="border-t border-slate-200">
-                    <td className="sticky left-0 bg-white px-3 py-1 font-medium z-10 whitespace-nowrap">
-                      {u.firstName} {u.lastName.charAt(0)}.
+                {activeUsers.map((u, idx) => (
+                  <tr key={u.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'}>
+                    <td className={`sticky left-0 px-4 py-2 font-medium z-10 whitespace-nowrap border-b border-slate-100 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'}`}>
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-brand-100 text-brand-700 text-xs font-semibold">
+                          {u.firstName.charAt(0)}
+                        </span>
+                        <span>
+                          {u.firstName} {u.lastName.charAt(0)}.
+                        </span>
+                      </div>
                     </td>
                     {days.map((d) => {
                       const key = `${u.id}|${ymd(d)}`;
                       const cell = grid[key];
                       const isAvail = availability[key];
                       const onLeave = leaves[key];
+                      const shift = cell ? shifts.find((s) => s.id === cell.shiftId) : null;
                       const bg = onLeave
                         ? 'bg-blue-50'
                         : isAvail === false
-                          ? 'bg-red-50'
+                          ? 'bg-red-50/70'
                           : isAvail === true
-                            ? 'bg-green-50'
+                            ? 'bg-green-50/40'
                             : '';
                       return (
-                        <td key={key} className={`px-0.5 py-1 ${bg}`}>
+                        <td key={key} className={`p-1 border-b border-slate-100 ${bg}`}>
                           <select
                             value={cell?.shiftId || ''}
                             onChange={(e) => setCell(u.id, d, e.target.value)}
-                            className="w-full text-xs border border-slate-200 rounded px-1 py-0.5 bg-transparent"
+                            className={`w-full text-xs font-semibold rounded px-1 py-1 border-0 focus:ring-1 focus:ring-brand-500 cursor-pointer ${
+                              shift?.name === 'V'
+                                ? 'bg-sky-100 text-sky-800'
+                                : shift?.name === 'M'
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : shift?.name === 'A'
+                                    ? 'bg-violet-100 text-violet-800'
+                                    : 'bg-transparent text-slate-400'
+                            }`}
                             disabled={!!schedule.publishedAt}
+                            title={shift ? `${shift.name} ${shift.startTime}–${shift.endTime}` : ''}
                           >
                             <option value="">—</option>
                             {shifts.map((s) => (
@@ -219,6 +242,18 @@ export default function ManagerSchedule() {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-600">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="shift-pill shift-V">V</span> 06:15–12:00
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="shift-pill shift-M">M</span> 09:00–17:00
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="shift-pill shift-A">A</span> 17:00–22:00
+            </span>
           </div>
 
           {schedule.publishedAt && (
