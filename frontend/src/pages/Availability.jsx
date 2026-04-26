@@ -1,21 +1,23 @@
 import { useEffect, useMemo, useState } from 'react';
-import { availabilityApi } from '../api/resources';
+import { availabilityApi, leaveRequestsApi } from '../api/resources';
 import MonthSelector from '../components/MonthSelector';
-import { daysInMonth, shiftMonth, ymd, isWeekend, currentYearMonth } from '../utils/date';
+import { daysInMonth, shiftMonth, ymd, currentYearMonth } from '../utils/date';
 
-const STATUS_ICON = {
-  PENDING: { label: 'Wacht op goedkeuring', cls: 'text-amber-700' },
-  APPROVED: { label: 'Goedgekeurd', cls: 'text-green-700' },
-  DENIED: { label: 'Afgewezen', cls: 'text-red-600' },
-};
+// Monday-based weekday index (0=Mon … 6=Sun)
+function weekdayIndex(date) {
+  return (date.getDay() + 6) % 7;
+}
+
+const WEEKDAYS = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'];
 
 export default function Availability() {
-  const start = currentYearMonth();
+  const start   = currentYearMonth();
   const initial = shiftMonth(start.year, start.month, 1);
   const [{ year, month }, setYM] = useState(initial);
-  const [entries, setEntries] = useState({});
-  const [saving, setSaving] = useState(false);
-  const [feedback, setFeedback] = useState(null); // { type: 'success'|'error', text }
+  const [entries,  setEntries]  = useState({});   // { 'YYYY-MM-DD': { isAvailable, notes, status } }
+  const [leaves,   setLeaves]   = useState({});   // { 'YYYY-MM-DD': true } – approved leave
+  const [saving,   setSaving]   = useState(false);
+  const [feedback, setFeedback] = useState(null);
 
   const days = useMemo(() => {
     const total = daysInMonth(year, month);
@@ -23,22 +25,26 @@ export default function Availability() {
   }, [year, month]);
 
   useEffect(() => {
-    availabilityApi.list(year, month).then((rows) => {
+    setFeedback(null);
+    Promise.all([
+      availabilityApi.list(year, month),
+      leaveRequestsApi.list('APPROVED'),
+    ]).then(([rows, approved]) => {
       const map = {};
       rows.forEach((r) => {
-        map[ymd(r.date)] = {
-          isAvailable: r.isAvailable,
-          notes: r.notes || '',
-          status: r.status || null,
-        };
+        map[ymd(r.date)] = { isAvailable: r.isAvailable, notes: r.notes || '', status: r.status };
       });
       setEntries(map);
+
+      const leaveMap = {};
+      approved.forEach((l) => { leaveMap[ymd(l.date)] = true; });
+      setLeaves(leaveMap);
     });
-    setFeedback(null);
   }, [year, month]);
 
   function toggle(day) {
     const key = ymd(day);
+    if (leaves[key]) return; // vrij goedgekeurd – niet aanpasbaar
     setEntries((prev) => ({
       ...prev,
       [key]: {
@@ -54,102 +60,119 @@ export default function Availability() {
     setSaving(true);
     setFeedback(null);
     try {
-      const payload = days.map((d) => {
-        const key = ymd(d);
-        const existing = entries[key];
-        return {
-          date: key,
-          isAvailable: existing ? existing.isAvailable : true,
-          notes: existing?.notes || undefined,
-        };
-      });
+      const payload = days
+        .filter((d) => !leaves[ymd(d)]) // sla goedgekeurde vrije dagen over
+        .map((d) => {
+          const key = ymd(d);
+          const existing = entries[key];
+          return { date: key, isAvailable: existing ? existing.isAvailable : true, notes: existing?.notes };
+        });
       await availabilityApi.save(year, month, payload);
       const rows = await availabilityApi.list(year, month);
       const map = {};
-      rows.forEach((r) => {
-        map[ymd(r.date)] = { isAvailable: r.isAvailable, notes: r.notes || '', status: r.status || null };
-      });
+      rows.forEach((r) => { map[ymd(r.date)] = { isAvailable: r.isAvailable, notes: r.notes || '', status: r.status }; });
       setEntries(map);
-      setFeedback({ type: 'success', text: 'Ingediend! De manager beoordeelt je beschikbaarheid.' });
+      setFeedback({ type: 'ok', text: 'Ingediend. De manager beoordeelt je beschikbaarheid.' });
     } catch (err) {
-      setFeedback({ type: 'error', text: err.response?.data?.error || 'Opslaan mislukt' });
+      setFeedback({ type: 'err', text: err.response?.data?.error || 'Opslaan mislukt' });
     } finally {
       setSaving(false);
     }
   }
 
+  // Calendar grid: leading empty cells so week starts on Monday
+  const firstDay    = new Date(year, month - 1, 1);
+  const leadingBlanks = weekdayIndex(firstDay);
+  const todayKey    = ymd(new Date());
+
   return (
-    <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <h1 className="text-2xl font-semibold">Mijn beschikbaarheid</h1>
+    <div className="max-w-2xl">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Mijn beschikbaarheid</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Geef aan wanneer je beschikbaar bent voor de komende maand</p>
+        </div>
         <MonthSelector year={year} month={month} onChange={(y, m) => setYM({ year: y, month: m })} />
       </div>
 
-      <div className="card mb-5 bg-blue-50 border-blue-200">
-        <p className="text-base text-blue-900 font-medium mb-1">Hoe werkt het?</p>
-        <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
-          <li>Klik op een dag om aan te geven of je beschikbaar bent (groen) of niet (rood).</li>
-          <li>Klik op <strong>Indienen bij manager</strong> als je klaar bent.</li>
-          <li>De manager beoordeelt je opgave en je krijgt een berichtje.</li>
-        </ol>
+      {/* Legenda */}
+      <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-600 mb-5">
+        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-green-200 border border-green-400" /> Beschikbaar</span>
+        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-red-200 border border-red-400" /> Niet beschikbaar</span>
+        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-blue-200 border border-blue-400" /> Vrij goedgekeurd</span>
+        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-white border border-slate-300" /> Nog niet ingevuld</span>
       </div>
 
-      <div className="flex flex-wrap items-center gap-5 text-sm text-slate-600 mb-4">
-        <span className="flex items-center gap-2">
-          <span className="w-4 h-4 rounded bg-green-200 border border-green-400 inline-block" />
-          Beschikbaar
-        </span>
-        <span className="flex items-center gap-2">
-          <span className="w-4 h-4 rounded bg-red-200 border border-red-400 inline-block" />
-          Niet beschikbaar
-        </span>
-        <span className="flex items-center gap-2">
-          <span className="w-4 h-4 rounded bg-white border border-slate-300 inline-block" />
-          Nog niet ingevuld
-        </span>
-      </div>
+      {/* Kalender grid */}
+      <div className="card p-4 mb-5">
+        {/* Weekdag headers */}
+        <div className="grid grid-cols-7 mb-1">
+          {WEEKDAYS.map((d) => (
+            <div key={d} className={`text-center text-xs font-bold uppercase tracking-wide py-1.5 ${d === 'Za' || d === 'Zo' ? 'text-slate-400' : 'text-slate-500'}`}>
+              {d}
+            </div>
+          ))}
+        </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2 mb-6">
-        {days.map((d) => {
-          const key = ymd(d);
-          const value = entries[key];
-          const available = value ? value.isAvailable : null;
-          const status = value?.status ?? null;
+        {/* Dag-cellen */}
+        <div className="grid grid-cols-7 gap-1">
+          {/* Lege cellen voor eerste week */}
+          {Array.from({ length: leadingBlanks }).map((_, i) => (
+            <div key={`blank-${i}`} />
+          ))}
 
-          let borderCls = 'border-slate-300 hover:bg-slate-50';
-          let bgCls = 'bg-white';
-          if (available === true) { bgCls = 'bg-green-100'; borderCls = 'border-green-400'; }
-          if (available === false) { bgCls = 'bg-red-100'; borderCls = 'border-red-400'; }
+          {days.map((d) => {
+            const key        = ymd(d);
+            const isToday    = key === todayKey;
+            const isLeave    = leaves[key];
+            const entry      = entries[key];
+            const isAvail    = entry?.isAvailable;
+            const status     = entry?.status;
+            const isWeekend  = weekdayIndex(d) >= 5;
 
-          const statusInfo = status ? STATUS_ICON[status] : null;
+            let bg = 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50';
+            let textColor = isWeekend ? 'text-slate-400' : 'text-slate-700';
 
-          return (
-            <button
-              key={key}
-              onClick={() => toggle(d)}
-              className={`rounded-md border-2 p-3 text-left transition-colors ${bgCls} ${borderCls} ${isWeekend(d) ? 'ring-1 ring-slate-300' : ''}`}
-            >
-              <div className="font-bold text-base">
-                {d.getDate()}
-              </div>
-              <div className="text-xs text-slate-600 capitalize">
-                {d.toLocaleDateString('nl-NL', { weekday: 'short' })}
-              </div>
-              <div className="text-xs mt-1 font-medium">
-                {available === true
-                  ? <span className="text-green-800">Beschikbaar</span>
-                  : available === false
-                    ? <span className="text-red-800">Niet</span>
-                    : <span className="text-slate-400">—</span>}
-              </div>
-              {statusInfo && (
-                <div className={`text-xs mt-0.5 ${statusInfo.cls}`}>
-                  {statusInfo.label}
+            if (isLeave) {
+              bg = 'bg-blue-100 border-blue-300 cursor-not-allowed';
+              textColor = 'text-blue-800';
+            } else if (isAvail === true) {
+              bg = 'bg-green-100 border-green-400 hover:bg-green-200';
+              textColor = 'text-green-900';
+            } else if (isAvail === false) {
+              bg = 'bg-red-100 border-red-400 hover:bg-red-200';
+              textColor = 'text-red-900';
+            }
+
+            return (
+              <button
+                key={key}
+                onClick={() => toggle(d)}
+                disabled={!!isLeave}
+                className={`relative rounded-xl border-2 p-2 text-left transition-all duration-100 min-h-[4rem] ${bg} ${isToday ? 'ring-2 ring-brand-500 ring-offset-1' : ''}`}
+              >
+                <div className={`text-sm font-bold tabular-nums ${textColor}`}>
+                  {d.getDate()}
                 </div>
-              )}
-            </button>
-          );
-        })}
+                <div className={`text-[10px] font-semibold mt-0.5 leading-tight ${textColor}`}>
+                  {isLeave
+                    ? 'Vrij'
+                    : isAvail === true
+                      ? 'Beschikbaar'
+                      : isAvail === false
+                        ? 'Niet'
+                        : ''}
+                </div>
+                {status === 'PENDING' && (
+                  <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-amber-400" title="Wacht op goedkeuring" />
+                )}
+                {status === 'APPROVED' && (
+                  <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-green-500" title="Goedgekeurd" />
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-4">
@@ -157,10 +180,10 @@ export default function Availability() {
           {saving ? 'Indienen...' : 'Indienen bij manager'}
         </button>
         {feedback && (
-          <div className={`rounded-lg px-4 py-2 text-base font-medium ${
-            feedback.type === 'success'
-              ? 'bg-green-100 text-green-800 border border-green-300'
-              : 'bg-red-100 text-red-800 border border-red-300'
+          <div className={`rounded-xl px-4 py-2 text-sm font-medium ${
+            feedback.type === 'ok'
+              ? 'bg-green-50 text-green-700 border border-green-200'
+              : 'bg-red-50 text-red-700 border border-red-200'
           }`}>
             {feedback.text}
           </div>

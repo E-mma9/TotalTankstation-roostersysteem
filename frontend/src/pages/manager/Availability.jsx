@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { availabilityApi, usersApi } from '../../api/resources';
+import { availabilityApi, leaveRequestsApi, usersApi } from '../../api/resources';
 import MonthSelector from '../../components/MonthSelector';
 import { daysInMonth, shiftMonth, ymd, isWeekend, currentYearMonth } from '../../utils/date';
 
@@ -15,6 +15,7 @@ export default function ManagerAvailability() {
   const [employees, setEmployees] = useState([]);
   const [selectedId, setSelectedId] = useState('');
   const [entries, setEntries] = useState([]);
+  const [leaves, setLeaves] = useState({});   // { 'YYYY-MM-DD': true } – approved leave
   const [denyState, setDenyState] = useState({});
   const [loading, setLoading] = useState(false);
 
@@ -27,7 +28,17 @@ export default function ManagerAvailability() {
   }, []);
 
   function loadEntries(uid, y, m) {
-    availabilityApi.list(y, m, uid).then(setEntries);
+    Promise.all([
+      availabilityApi.list(y, m, uid),
+      leaveRequestsApi.list('APPROVED'),
+    ]).then(([rows, approved]) => {
+      setEntries(rows);
+      const leaveMap = {};
+      approved
+        .filter((l) => l.userId === uid)
+        .forEach((l) => { leaveMap[ymd(l.date)] = true; });
+      setLeaves(leaveMap);
+    });
   }
 
   useEffect(() => {
@@ -116,6 +127,9 @@ export default function ManagerAvailability() {
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" /> openstaand
           </span>
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-blue-400 inline-block" /> vrij goedgekeurd
+          </span>
         </div>
         {pendingCount > 0 && (
           <button
@@ -134,19 +148,31 @@ export default function ManagerAvailability() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
           {days.map((d) => {
             const key = ymd(d);
+            const isLeave = leaves[key];
             const entry = entryMap[key];
+
+            const dayLabel = `${d.getDate()} ${d.toLocaleDateString('nl-NL', { weekday: 'short' })}`;
+            const weekendRing = isWeekend(d) ? 'ring-1 ring-slate-200' : '';
+
+            if (isLeave) {
+              return (
+                <div
+                  key={key}
+                  className={`rounded-md border p-3 text-sm bg-blue-50 border-blue-200 ${weekendRing}`}
+                >
+                  <div className="font-medium text-blue-800">{dayLabel}</div>
+                  <div className="text-xs text-blue-600 mt-0.5">Vrij goedgekeurd</div>
+                </div>
+              );
+            }
 
             if (!entry) {
               return (
                 <div
                   key={key}
-                  className={`rounded-md border p-3 text-sm bg-slate-50 border-slate-200 ${
-                    isWeekend(d) ? 'ring-1 ring-slate-100' : ''
-                  }`}
+                  className={`rounded-md border p-3 text-sm bg-slate-50 border-slate-200 ${weekendRing}`}
                 >
-                  <div className="font-medium text-slate-400">
-                    {d.getDate()} {d.toLocaleDateString('nl-NL', { weekday: 'short' })}
-                  </div>
+                  <div className="font-medium text-slate-400">{dayLabel}</div>
                   <div className="text-xs text-slate-300 mt-0.5">Niet ingevuld</div>
                 </div>
               );
@@ -162,11 +188,9 @@ export default function ManagerAvailability() {
                   entry.isAvailable
                     ? 'bg-green-50 border-green-200'
                     : 'bg-red-50 border-red-200'
-                } ${isWeekend(d) ? 'ring-1 ring-slate-200' : ''}`}
+                } ${weekendRing}`}
               >
-                <div className="font-medium">
-                  {d.getDate()} {d.toLocaleDateString('nl-NL', { weekday: 'short' })}
-                </div>
+                <div className="font-medium">{dayLabel}</div>
                 <div className="text-xs text-slate-600">
                   {entry.isAvailable ? 'beschikbaar' : 'niet beschikbaar'}
                 </div>

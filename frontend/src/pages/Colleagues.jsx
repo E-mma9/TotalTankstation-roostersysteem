@@ -71,7 +71,7 @@ export default function Colleagues() {
             return (
               <div
                 key={date}
-                className={`card-compact ${isToday ? 'border-brand-300 ring-2 ring-brand-100' : ''}`}
+                className={`card-compact ${isToday ? 'border-brand-200 ring-2 ring-brand-100' : ''}`}
               >
                 <div className="flex items-center gap-2 mb-3">
                   <p className="font-semibold text-slate-800">{formatDay(date)}</p>
