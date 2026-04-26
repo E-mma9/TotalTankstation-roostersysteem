@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build output
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Docker
+docker-compose.override.yml
+
+# Superpowers (brainstorm sessies)
+.superpowers/
+
+# Claude local settings
+.claude/settings.local.json

@@ -1,0 +1,197 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  MEDEWERKER
+  MANAGER
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  DENIED
+}
+
+enum SwapStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+enum EntryStatus {
+  WERKEND
+  ZIEK
+  AFWEZIG
+}
+
+model User {
+  id                  String    @id @default(uuid())
+  email               String    @unique
+  passwordHash        String    @map("password_hash")
+  firstName           String    @map("first_name")
+  lastName            String    @map("last_name")
+  role                Role      @default(MEDEWERKER)
+  isActive            Boolean   @default(true) @map("is_active")
+  employmentStartDate DateTime? @map("employment_start_date") @db.Date
+  employmentEndDate   DateTime? @map("employment_end_date") @db.Date
+  mustChangePassword  Boolean   @default(false) @map("must_change_password")
+  createdAt           DateTime  @default(now()) @map("created_at")
+
+  availability     Availability[]
+  scheduleEntries  ScheduleEntry[]
+  schedulesCreated Schedule[]      @relation("CreatedBy")
+  leaveRequests    LeaveRequest[]
+  leaveReviewed    LeaveRequest[]  @relation("Reviewer")
+  swapsRequested   ShiftSwap[]     @relation("Requester")
+  swapsTargeted    ShiftSwap[]     @relation("Target")
+  notifications    Notification[]
+  passwordResets   PasswordReset[]
+  refreshTokens    RefreshToken[]
+
+  @@map("users")
+}
+
+model Shift {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  startTime String   @map("start_time")
+  endTime   String   @map("end_time")
+
+  scheduleEntries ScheduleEntry[]
+
+  @@map("shifts")
+}
+
+model Availability {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  date         DateTime @db.Date
+  isAvailable  Boolean  @map("is_available")
+  notes        String?
+  submittedAt  DateTime @default(now()) @map("submitted_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([date])
+  @@map("availability")
+}
+
+model Schedule {
+  id          String    @id @default(uuid())
+  year        Int
+  month       Int
+  createdById String    @map("created_by")
+  publishedAt DateTime? @map("published_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  createdBy User            @relation("CreatedBy", fields: [createdById], references: [id])
+  entries   ScheduleEntry[]
+
+  @@unique([year, month])
+  @@map("schedules")
+}
+
+model ScheduleEntry {
+  id         String      @id @default(uuid())
+  scheduleId String      @map("schedule_id")
+  userId     String      @map("user_id")
+  date       DateTime    @db.Date
+  shiftId    String      @map("shift_id")
+  status     EntryStatus @default(WERKEND)
+  notes      String?
+
+  schedule Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id])
+  shift    Shift    @relation(fields: [shiftId], references: [id])
+
+  swapsAsEntry    ShiftSwap[] @relation("SwapEntry")
+  swapsAsProposed ShiftSwap[] @relation("SwapProposed")
+
+  @@unique([scheduleId, userId, date])
+  @@index([scheduleId])
+  @@index([userId, date])
+  @@map("schedule_entries")
+}
+
+model LeaveRequest {
+  id           String      @id @default(uuid())
+  userId       String      @map("user_id")
+  date         DateTime    @db.Date
+  reason       String?
+  status       LeaveStatus @default(PENDING)
+  reviewedById String?     @map("reviewed_by")
+  reviewedAt   DateTime?   @map("reviewed_at")
+  createdAt    DateTime    @default(now()) @map("created_at")
+
+  user     User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewer User? @relation("Reviewer", fields: [reviewedById], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@map("leave_requests")
+}
+
+model ShiftSwap {
+  id              String     @id @default(uuid())
+  requesterId     String     @map("requester_id")
+  targetId        String     @map("target_id")
+  scheduleEntryId String     @map("schedule_entry_id")
+  proposedEntryId String?    @map("proposed_entry_id")
+  status          SwapStatus @default(PENDING)
+  createdAt       DateTime   @default(now()) @map("created_at")
+
+  requester     User           @relation("Requester", fields: [requesterId], references: [id])
+  target        User           @relation("Target", fields: [targetId], references: [id])
+  scheduleEntry ScheduleEntry  @relation("SwapEntry", fields: [scheduleEntryId], references: [id])
+  proposedEntry ScheduleEntry? @relation("SwapProposed", fields: [proposedEntryId], references: [id])
+
+  @@map("shift_swaps")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  type      String
+  message   String
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+model PasswordReset {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  token     String    @unique
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_resets")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  token     String    @unique
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
