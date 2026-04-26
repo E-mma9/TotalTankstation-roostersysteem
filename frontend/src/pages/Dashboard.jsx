@@ -6,9 +6,9 @@ import MonthSelector from '../components/MonthSelector';
 import { currentYearMonth, ymd } from '../utils/date';
 
 const SHIFT_INFO = {
-  V: { label: 'Vroege dienst', color: 'border-sky-400 bg-sky-50',   pill: 'shift-V' },
-  M: { label: 'Middagdienst',  color: 'border-amber-400 bg-amber-50', pill: 'shift-M' },
-  A: { label: 'Avonddienst',   color: 'border-violet-400 bg-violet-50', pill: 'shift-A' },
+  V: { label: 'Vroege dienst', border: 'border-sky-400',    bg: 'bg-sky-50',    pill: 'shift-V' },
+  M: { label: 'Middagdienst',  border: 'border-amber-400',  bg: 'bg-amber-50',  pill: 'shift-M' },
+  A: { label: 'Avonddienst',   border: 'border-violet-400', bg: 'bg-violet-50', pill: 'shift-A' },
 };
 
 function greeting() {
@@ -39,23 +39,25 @@ export default function Dashboard() {
 
   const todayKey = ymd(new Date());
   const todayEntry = myEntries.find((e) => ymd(e.date) === todayKey);
+  const info = todayEntry ? SHIFT_INFO[todayEntry.shift.name] : null;
 
   return (
     <div>
-      {/* Begroeting */}
-      <div className="mb-6">
+      {/* Begroeting + vandaag-banner */}
+      <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-900">
           {greeting()}, {user.firstName}!
         </h1>
-        {todayEntry ? (
-          <div className={`mt-3 inline-flex items-center gap-3 rounded-2xl border-l-4 px-5 py-3 ${SHIFT_INFO[todayEntry.shift.name]?.color ?? 'border-slate-300 bg-white'}`}>
-            <span className={`shift-pill ${SHIFT_INFO[todayEntry.shift.name]?.pill ?? ''} text-base px-3 py-1.5`}>
+
+        {todayEntry && info ? (
+          <div className={`mt-4 inline-flex items-center gap-4 rounded-2xl border-l-4 px-5 py-4 shadow-sm ${info.border} ${info.bg}`}>
+            <span className={`shift-pill ${info.pill} text-base px-3 py-1.5`}>
               {todayEntry.shift.name}
             </span>
             <div>
-              <p className="text-sm font-medium text-slate-600">Vandaag</p>
+              <p className="text-sm font-medium text-slate-500">Vandaag werk je</p>
               <p className="text-lg font-bold text-slate-900">
-                {SHIFT_INFO[todayEntry.shift.name]?.label} · {todayEntry.shift.startTime}–{todayEntry.shift.endTime}
+                {info.label} &middot; {todayEntry.shift.startTime}–{todayEntry.shift.endTime}
               </p>
             </div>
           </div>
@@ -71,24 +73,38 @@ export default function Dashboard() {
       </div>
 
       {loading ? (
-        <p className="text-slate-500">Laden...</p>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="card animate-pulse">
+              <div className="h-4 bg-slate-100 rounded w-24 mb-3" />
+              <div className="h-8 bg-slate-100 rounded w-16 mb-2" />
+              <div className="h-4 bg-slate-100 rounded w-32" />
+            </div>
+          ))}
+        </div>
       ) : !schedule ? (
-        <div className="card text-slate-600">Voor deze maand is nog geen rooster aangemaakt.</div>
+        <div className="card text-slate-500 text-center py-8">
+          Voor deze maand is nog geen rooster aangemaakt.
+        </div>
       ) : !schedule.publishedAt ? (
-        <div className="card text-slate-600">
+        <div className="card text-slate-500 text-center py-8">
           Het rooster voor deze maand is nog niet gepubliceerd door de manager.
         </div>
       ) : myEntries.length === 0 ? (
-        <div className="card text-slate-600">Je bent deze maand niet ingeroosterd.</div>
+        <div className="card text-slate-500 text-center py-8">
+          Je bent deze maand niet ingeroosterd.
+        </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {myEntries.map((e) => {
-            const info = SHIFT_INFO[e.shift.name];
+            const inf = SHIFT_INFO[e.shift.name];
             const isToday = ymd(e.date) === todayKey;
             return (
               <div
                 key={e.id}
-                className={`card border-l-4 hover:shadow-md transition-shadow ${info?.color ?? 'border-slate-300'} ${isToday ? 'ring-2 ring-brand-500' : ''}`}
+                className={`card border-l-4 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 ${
+                  inf ? `${inf.border} ${inf.bg}` : 'border-slate-300'
+                } ${isToday ? 'ring-2 ring-brand-500 ring-offset-1' : ''}`}
               >
                 <div className="flex items-start justify-between mb-2">
                   <div>
@@ -96,33 +112,30 @@ export default function Dashboard() {
                       {new Date(e.date).toLocaleDateString('nl-NL', { weekday: 'long' })}
                       {isToday && <span className="ml-2 text-brand-600 font-semibold">· Vandaag</span>}
                     </p>
-                    <p className="text-3xl font-bold tabular-nums leading-tight">
+                    <p className="text-3xl font-bold tabular-nums leading-tight text-slate-900">
                       {new Date(e.date).getDate()}{' '}
                       <span className="text-base font-normal text-slate-500">
                         {new Date(e.date).toLocaleDateString('nl-NL', { month: 'long' })}
                       </span>
                     </p>
                   </div>
-                  <span className={`shift-pill ${info?.pill ?? ''}`}>{e.shift.name}</span>
+                  <span className={`shift-pill ${inf?.pill ?? ''}`}>{e.shift.name}</span>
                 </div>
 
                 <p className="text-base font-semibold text-slate-700 mb-0.5">
-                  {info?.label ?? e.shift.name}
+                  {inf?.label ?? e.shift.name}
                 </p>
                 <p className="text-xl font-bold tabular-nums text-slate-800 mb-3">
                   {e.shift.startTime} – {e.shift.endTime}
                 </p>
 
                 {e.status !== 'WERKEND' && (
-                  <p className="text-sm text-amber-700 bg-amber-50 rounded-lg px-3 py-1.5 mb-3">
+                  <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5 mb-3">
                     Status: {e.status.toLowerCase()}
                   </p>
                 )}
 
-                <Link
-                  to={`/dienstruil?entry=${e.id}`}
-                  className="btn-secondary text-sm w-full text-center"
-                >
+                <Link to={`/dienstruil?entry=${e.id}`} className="btn-secondary text-sm w-full text-center">
                   Dienst aanbieden aan collega
                 </Link>
               </div>
@@ -131,8 +144,8 @@ export default function Dashboard() {
         </div>
       )}
 
-      <div className="mt-6 flex gap-4">
-        <Link to="/dashboard/collegas" className="text-brand-600 hover:underline text-base font-medium">
+      <div className="mt-6">
+        <Link to="/dashboard/collegas" className="text-brand-600 hover:text-brand-700 hover:underline text-base font-medium transition-colors">
           Bekijk wie er wanneer werkt →
         </Link>
       </div>

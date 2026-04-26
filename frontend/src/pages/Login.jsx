@@ -29,42 +29,57 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-md card">
-        <h1 className="text-2xl font-semibold text-center mb-1">Total Tankstation</h1>
-        <p className="text-sm text-slate-500 text-center mb-6">Roostersysteem</p>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="label">E-mail</label>
-            <input
-              type="email"
-              className="input"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoFocus
-            />
+    <div className="min-h-screen flex items-center justify-center px-4 bg-slate-50">
+      <div className="w-full max-w-md">
+        {/* Logo-blok */}
+        <div className="flex flex-col items-center mb-8">
+          <div className="w-16 h-16 rounded-2xl bg-brand-600 flex items-center justify-center text-white font-black text-3xl shadow-md mb-4">
+            T
           </div>
-          <div>
-            <label className="label">Wachtwoord</label>
-            <input
-              type="password"
-              className="input"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <button type="submit" disabled={loading} className="btn-primary w-full">
-            {loading ? 'Inloggen...' : 'Inloggen'}
-          </button>
-          <div className="text-center text-sm">
-            <Link to="/forgot-password" className="text-brand-600 hover:underline">
-              Wachtwoord vergeten?
-            </Link>
-          </div>
-        </form>
+          <h1 className="text-2xl font-bold text-slate-900">Total Tankstation</h1>
+          <p className="text-slate-500 mt-1">Roostersysteem</p>
+        </div>
+
+        <div className="card shadow-md">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="label">E-mailadres</label>
+              <input
+                type="email"
+                className="input"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="naam@totaltankstation.nl"
+                required
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="label">Wachtwoord</label>
+              <input
+                type="password"
+                className="input"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+              />
+            </div>
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm font-medium">
+                {error}
+              </div>
+            )}
+            <button type="submit" disabled={loading} className="btn-primary w-full">
+              {loading ? 'Inloggen...' : 'Inloggen'}
+            </button>
+            <div className="text-center text-sm pt-1">
+              <Link to="/forgot-password" className="text-brand-600 hover:text-brand-700 hover:underline font-medium transition-colors">
+                Wachtwoord vergeten?
+              </Link>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
