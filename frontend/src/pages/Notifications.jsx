@@ -15,6 +15,7 @@ const TYPE_CONFIG = {
   SWAP_ACCEPTED:          { icon: '✅', color: 'bg-green-50 text-green-700 border border-green-100', label: 'Dienstruil geaccepteerd' },
   SWAP_DECLINED:          { icon: '❌', color: 'bg-red-50 text-red-700 border border-red-100',       label: 'Dienstruil afgewezen' },
   SCHEDULE_NOT_PUBLISHED: { icon: '⚠️', color: 'bg-amber-50 text-amber-700 border border-amber-100', label: 'Rooster niet gepubliceerd' },
+  SCHEDULE_PUBLISHED:     { icon: '📣', color: 'bg-green-50 text-green-700 border border-green-100',  label: 'Rooster gepubliceerd' },
 };
 
 function destinationFor(type, isManager) {
@@ -30,6 +31,7 @@ function destinationFor(type, isManager) {
     case 'SWAP_ACCEPTED':
     case 'SWAP_DECLINED':          return '/dienstruil';
     case 'SCHEDULE_NOT_PUBLISHED': return isManager ? '/manager/rooster' : null;
+    case 'SCHEDULE_PUBLISHED':     return '/dashboard';
     default:                       return null;
   }
 }

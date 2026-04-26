@@ -89,7 +89,7 @@ export default function ManagerAvailability() {
   return (
     <div>
       <div className="flex flex-wrap items-center gap-3 mb-6">
-        <h1 className="text-2xl font-semibold">Beschikbaarheid</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Beschikbaarheid medewerkers</h1>
         <div className="flex-1" />
         <select
           value={selectedId}
