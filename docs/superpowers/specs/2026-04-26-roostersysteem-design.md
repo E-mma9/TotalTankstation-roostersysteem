@@ -95,12 +95,12 @@ leave_requests  -- vrije-dagenverzoeken
   reviewed_at  TIMESTAMPTZ
   created_at   TIMESTAMPTZ
 
-shift_swaps  -- dienstruil tussen collega's
+shift_swaps  -- dienstovername of -ruil tussen collega's
   id                 UUID PRIMARY KEY
   requester_id       UUID REFERENCES users
   target_id          UUID REFERENCES users
-  schedule_entry_id  UUID REFERENCES schedule_entries  -- dienst van requester
-  proposed_entry_id  UUID REFERENCES schedule_entries  -- dienst van target
+  schedule_entry_id  UUID REFERENCES schedule_entries  -- dienst die overgenomen/geruild wordt
+  proposed_entry_id  UUID REFERENCES schedule_entries  -- dienst van target (NULL = eenzijdige overname)
   status             ENUM('PENDING', 'ACCEPTED', 'DECLINED')
   created_at         TIMESTAMPTZ
 
@@ -180,7 +180,7 @@ PATCH  /api/notifications/read-all
 - Eigen maandrooster bekijken inclusief welke collega's dezelfde dag werken
 - Beschikbaarheid opgeven (maximaal 2 maanden vooruit)
 - Vrije dag aanvragen + status volgen
-- Dienstruil voorstellen aan een collega
+- Dienst aanbieden aan een collega (eenzijdige overname of wederzijdse ruil)
 - Notificaties bekijken (in-app + e-mail)
 - Wachtwoord resetten via e-mail
 
@@ -188,7 +188,7 @@ PATCH  /api/notifications/read-all
 - Maandrooster aanmaken, bewerken en publiceren
 - Beschikbaarheidsoverzicht van alle medewerkers raadplegen bij het inroosteren
 - Vrije-dagenverzoeken goedkeuren of afwijzen
-- Dienstruilverzoeken inzien
+- Dienstovername/ruilverzoeken inzien
 - Medewerkers toevoegen, bewerken en uit dienst zetten
 - Voormalige medewerkers apart inzien (historisch)
 
@@ -238,8 +238,8 @@ Triggers die een notificatie (in-app + e-mail) versturen:
 |-------|-----------|
 | Rooster gepubliceerd | Alle actieve medewerkers |
 | Vrije-dagenverzoek goedgekeurd/afgewezen | Aanvragende medewerker |
-| Dienstruilverzoek ontvangen | Target medewerker |
-| Dienstruilverzoek geaccepteerd/afgewezen | Aanvragende medewerker |
+| Overname/ruilverzoek ontvangen | Target medewerker |
+| Overname/ruilverzoek geaccepteerd/afgewezen | Aanvragende medewerker |
 | Account aangemaakt (tijdelijk wachtwoord) | Nieuwe medewerker |
 
 ---
