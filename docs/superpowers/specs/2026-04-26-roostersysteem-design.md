@@ -59,15 +59,14 @@ shifts  -- geseed bij opstart
   start_time  TIME   -- 06:15 / 09:00 / 17:00
   end_time    TIME   -- 12:00 / 17:00 / 22:00
 
-availability  -- medewerker geeft beschikbaarheid op
-  id               UUID PRIMARY KEY
-  user_id          UUID REFERENCES users
-  year             INT
-  month            INT
-  available_dates  DATE[]
-  notes            TEXT
-  submitted_at     TIMESTAMPTZ
-  UNIQUE(user_id, year, month)
+availability  -- één rij per (medewerker, datum); genormaliseerd voor JOIN-baarheid
+  id            UUID PRIMARY KEY
+  user_id       UUID REFERENCES users
+  date          DATE
+  is_available  BOOLEAN
+  notes         TEXT
+  submitted_at  TIMESTAMPTZ
+  UNIQUE(user_id, date)
 
 schedules  -- maandrooster header
   id            UUID PRIMARY KEY
@@ -84,6 +83,9 @@ schedule_entries  -- één regel per medewerker per dag
   user_id      UUID REFERENCES users
   date         DATE
   shift_id     UUID REFERENCES shifts
+  status       ENUM('WERKEND', 'ZIEK', 'AFWEZIG') DEFAULT 'WERKEND'
+  notes        TEXT
+  UNIQUE(schedule_id, user_id, date)  -- max 1 dienst per persoon per dag
 
 leave_requests  -- vrije-dagenverzoeken
   id           UUID PRIMARY KEY
@@ -197,6 +199,7 @@ PATCH  /api/notifications/read-all
 ## 5. Authenticatie & Beveiliging
 
 - **JWT:** `access_token` (15 min, in geheugen) + `refresh_token` (7 dagen, `httpOnly` cookie)
+- **Refresh token rotatie:** elk gebruik van een refresh token trekt de oude in en geeft een nieuwe uit; gestolen tokens worden zo snel onbruikbaar
 - **Wachtwoorden:** bcrypt, cost factor 12
 - **Rate limiting:** max 5 loginpogingen per minuut per IP
 - **CORS:** geconfigureerd op domeinnaam
@@ -221,7 +224,7 @@ PATCH  /api/notifications/read-all
 
 ### Manager
 ```
-/manager/rooster           — maandrooster aanmaken & publiceren
+/manager/rooster           — maandrooster als kalender-grid (medewerkers × dagen) met beschikbaarheid-overlay
 /manager/medewerkers       — teamoverzicht, toevoegen, uit dienst zetten
 /manager/verzoeken         — vrije-dagen & dienstruilverzoeken beheren
 ```
@@ -242,6 +245,7 @@ Triggers die een notificatie (in-app + e-mail) versturen:
 | Overname/ruilverzoek ontvangen | Target medewerker |
 | Overname/ruilverzoek geaccepteerd/afgewezen | Aanvragende medewerker |
 | Account aangemaakt (tijdelijk wachtwoord) | Nieuwe medewerker |
+| Rooster nog niet gepubliceerd (10 dagen voor maandstart) | Manager |
 
 **Dagelijkse herinnering:** Een cron-job draait elke avond om 18:00 en stuurt iedere medewerker met een dienst voor de volgende dag een notificatie (in-app + e-mail) met het tijdstip van hun dienst.
 
@@ -286,6 +290,12 @@ SMTP_FROM=noreply@totaltankstation.nl
 # Frontend
 VITE_API_URL=http://localhost:3001
 ```
+
+---
+
+### Backups
+
+Een dagelijkse `pg_dump` cron-job maakt een backup naar `/var/backups/roostersysteem/`. Backups ouder dan 14 dagen worden automatisch verwijderd. Zie `docs/deployment.md` voor instellen + restore-procedure.
 
 ---
 
