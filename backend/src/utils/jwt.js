@@ -4,7 +4,7 @@ import { config } from '../config.js';
 
 export function signAccessToken(user) {
   return jwt.sign(
-    { sub: user.id, role: user.role, email: user.email },
+    { sub: user.id, role: user.role, email: user.email, firstName: user.firstName, lastName: user.lastName },
     config.jwt.accessSecret,
     { expiresIn: config.jwt.accessExpiresIn }
   );

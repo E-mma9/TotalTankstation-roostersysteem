@@ -8,7 +8,7 @@ export function authenticate(req, _res, next) {
   }
   try {
     const payload = verifyAccessToken(header.slice(7));
-    req.user = { id: payload.sub, role: payload.role, email: payload.email };
+    req.user = { id: payload.sub, role: payload.role, email: payload.email, firstName: payload.firstName, lastName: payload.lastName };
     next();
   } catch {
     next(unauthorized('Ongeldig of verlopen access token'));
