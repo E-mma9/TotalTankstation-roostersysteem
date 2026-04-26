@@ -32,10 +32,10 @@ export default function ManagerRequests() {
     try { await fn(); load(); } finally { setLoading(false); }
   }
 
-  const pendingLeaves = leaves.filter((l) => l.status === 'PENDING');
-  const pendingSwaps  = swaps.filter((s) => s.status === 'PENDING');
+  const pendingLeaves  = leaves.filter((l) => l.status === 'PENDING');
+  const pendingSwaps   = swaps.filter((s) => s.status === 'MANAGER_PENDING');
   const reviewedLeaves = leaves.filter((l) => l.status !== 'PENDING');
-  const reviewedSwaps  = swaps.filter((s) => s.status !== 'PENDING');
+  const reviewedSwaps  = swaps.filter((s) => !['PENDING', 'MANAGER_PENDING'].includes(s.status));
   const totalPending  = pendingLeaves.length + pendingSwaps.length;
   const totalReviewed = reviewedLeaves.length + reviewedSwaps.length;
 

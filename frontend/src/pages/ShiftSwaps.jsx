@@ -4,12 +4,17 @@ import { shiftSwapsApi, schedulesApi, usersApi } from '../api/resources';
 import { useAuthStore } from '../store/authStore';
 import { currentYearMonth, formatDate } from '../utils/date';
 
-const STATUS_LABELS = { PENDING: 'Open', ACCEPTED: 'Geaccepteerd', DECLINED: 'Afgewezen' };
-const STATUS_COLORS = {
-  PENDING: 'bg-amber-100 text-amber-800',
-  ACCEPTED: 'bg-green-100 text-green-800',
-  DECLINED: 'bg-red-100 text-red-800',
+const STATUS_CONFIG = {
+  PENDING:         { label: 'Wacht op collega',  cls: 'bg-amber-100 text-amber-800' },
+  MANAGER_PENDING: { label: 'Wacht op manager',  cls: 'bg-blue-100 text-blue-800' },
+  ACCEPTED:        { label: 'Goedgekeurd',        cls: 'bg-green-100 text-green-800' },
+  DECLINED:        { label: 'Afgewezen',          cls: 'bg-red-100 text-red-800' },
 };
+
+function StatusPill({ status }) {
+  const c = STATUS_CONFIG[status] ?? { label: status, cls: 'bg-slate-100 text-slate-600' };
+  return <span className={`text-sm px-3 py-1 rounded-full font-medium ${c.cls}`}>{c.label}</span>;
+}
 
 export default function ShiftSwaps() {
   const { user } = useAuthStore();
@@ -20,6 +25,7 @@ export default function ShiftSwaps() {
   const [selectedEntry, setSelectedEntry] = useState(params.get('entry') || '');
   const [targetId, setTargetId] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   function load() {
     shiftSwapsApi.list().then(setSwaps);
@@ -27,7 +33,7 @@ export default function ShiftSwaps() {
 
   useEffect(() => {
     load();
-    usersApi.list().then((items) => setUsers(items.filter((u) => u.id !== user.id)));
+    usersApi.list().then((items) => setUsers(items.filter((u) => u.id !== user.id && u.isActive !== false)));
     const { year, month } = currentYearMonth();
     schedulesApi
       .get(year, month)
@@ -37,10 +43,12 @@ export default function ShiftSwaps() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
+    setSuccess('');
     try {
       await shiftSwapsApi.create(selectedEntry, targetId, null);
       setSelectedEntry('');
       setTargetId('');
+      setSuccess('Aanvraag verstuurd. Je collega wordt op de hoogte gesteld.');
       load();
     } catch (err) {
       setError(err.response?.data?.error || 'Aanvraag mislukt');
@@ -52,15 +60,19 @@ export default function ShiftSwaps() {
     load();
   }
 
-  const incoming = swaps.filter((s) => s.targetId === user.id);
+  const incoming = swaps.filter((s) => s.targetId === user.id && s.status === 'PENDING');
   const outgoing = swaps.filter((s) => s.requesterId === user.id);
 
   return (
     <div>
       <h1 className="text-2xl font-semibold mb-6">Dienstruil</h1>
 
+      {/* ── Aanvragen ── */}
       <div className="card mb-6">
-        <h2 className="font-medium mb-3">Dienst aanbieden</h2>
+        <h2 className="font-semibold text-lg mb-1">Dienst aanbieden aan collega</h2>
+        <p className="text-sm text-slate-500 mb-4">
+          Selecteer welke dienst je wil aanbieden en aan wie. Je collega moet het eerst accepteren, daarna keurt de manager het goed.
+        </p>
         <form onSubmit={handleSubmit} className="grid sm:grid-cols-3 gap-3 items-end">
           <div>
             <label className="label">Mijn dienst</label>
@@ -98,64 +110,62 @@ export default function ShiftSwaps() {
             Aanvragen
           </button>
         </form>
-        {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
+        {error && <p className="text-base text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-2 mt-3">{error}</p>}
+        {success && <p className="text-base text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2 mt-3">{success}</p>}
       </div>
 
-      <h2 className="font-medium mb-3">Inkomend</h2>
+      {/* ── Inkomend ── */}
+      <h2 className="font-semibold text-lg mb-3">Inkomende verzoeken</h2>
       {incoming.length === 0 ? (
-        <div className="card text-slate-600 mb-6">Geen openstaande verzoeken aan jou.</div>
+        <div className="card text-slate-500 mb-6">Geen verzoeken aan jou op dit moment.</div>
       ) : (
-        <div className="space-y-2 mb-6">
+        <div className="space-y-3 mb-6">
           {incoming.map((s) => (
-            <div key={s.id} className="card">
-              <div className="flex items-center justify-between mb-2">
-                <p className="font-medium">
-                  {s.requester.firstName} {s.requester.lastName}
-                </p>
-                <span className={`text-xs px-2 py-1 rounded ${STATUS_COLORS[s.status]}`}>
-                  {STATUS_LABELS[s.status]}
-                </span>
-              </div>
-              <p className="text-base text-slate-700">
-                Kan jij de dienst overnemen op{' '}
-                <strong>{formatDate(s.scheduleEntry.date)}</strong>?
+            <div key={s.id} className="card border-l-4 border-l-amber-400">
+              <p className="font-semibold text-lg mb-1">
+                {s.requester.firstName} {s.requester.lastName}
               </p>
-              <p className="text-sm text-slate-500">
+              <p className="text-base text-slate-700 mb-0.5">
+                Kan jij de dienst overnemen op <strong>{formatDate(s.scheduleEntry.date)}</strong>?
+              </p>
+              <p className="text-sm text-slate-500 mb-4">
                 Dienst {s.scheduleEntry.shift.name} · {s.scheduleEntry.shift.startTime}–{s.scheduleEntry.shift.endTime}
               </p>
-              {s.status === 'PENDING' && (
-                <div className="flex gap-2 mt-3">
-                  <button onClick={() => handleRespond(s.id, 'ACCEPTED')} className="btn-primary">
-                    Accepteren
-                  </button>
-                  <button onClick={() => handleRespond(s.id, 'DECLINED')} className="btn-secondary">
-                    Afwijzen
-                  </button>
-                </div>
-              )}
+              <div className="flex gap-3">
+                <button onClick={() => handleRespond(s.id, 'ACCEPTED')} className="btn-primary">
+                  Accepteren
+                </button>
+                <button onClick={() => handleRespond(s.id, 'DECLINED')} className="btn-secondary">
+                  Afwijzen
+                </button>
+              </div>
             </div>
           ))}
         </div>
       )}
 
-      <h2 className="font-medium mb-3">Uitgaand</h2>
+      {/* ── Uitgaand ── */}
+      <h2 className="font-semibold text-lg mb-3">Mijn aanvragen</h2>
       {outgoing.length === 0 ? (
-        <div className="card text-slate-600">Geen verzoeken verzonden.</div>
+        <div className="card text-slate-500">Je hebt nog geen aanvragen verstuurd.</div>
       ) : (
         <div className="space-y-2">
           {outgoing.map((s) => (
-            <div key={s.id} className="card flex items-center justify-between">
+            <div key={s.id} className="card flex items-center justify-between gap-4">
               <div>
                 <p className="font-medium">
-                  Naar {s.target.firstName} {s.target.lastName}
+                  Aan {s.target.firstName} {s.target.lastName}
                 </p>
                 <p className="text-sm text-slate-500">
                   {formatDate(s.scheduleEntry.date)} — dienst {s.scheduleEntry.shift.name}
                 </p>
+                {s.status === 'MANAGER_PENDING' && (
+                  <p className="text-sm text-blue-700 mt-0.5">
+                    Je collega heeft geaccepteerd — wacht op manager
+                  </p>
+                )}
               </div>
-              <span className={`text-xs px-2 py-1 rounded ${STATUS_COLORS[s.status]}`}>
-                {STATUS_LABELS[s.status]}
-              </span>
+              <StatusPill status={s.status} />
             </div>
           ))}
         </div>

@@ -110,12 +110,13 @@ router.post(
       select: { id: true },
     });
     const monthLabel = new Date(year, month - 1, 1).toLocaleString('nl-NL', { month: 'long', year: 'numeric' });
+    const employeeName = `${req.user.firstName} ${req.user.lastName}`;
     await Promise.all(
       managers.map((m) =>
         notify({
           userId: m.id,
           type: 'AVAILABILITY_SUBMITTED',
-          message: `Beschikbaarheidswijziging ingediend voor ${monthLabel} — wacht op goedkeuring`,
+          message: `${employeeName} heeft beschikbaarheid ingediend voor ${monthLabel}`,
         })
       )
     );

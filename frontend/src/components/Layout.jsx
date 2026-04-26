@@ -52,24 +52,24 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-[4.5rem]">
           <div className="flex items-center gap-3">
             <button
-              className="md:hidden p-2 -ml-2 rounded-lg text-slate-600 hover:bg-slate-100"
+              className="lg:hidden p-2 -ml-2 rounded-xl text-slate-600 hover:bg-slate-100"
               onClick={() => setMenuOpen((v) => !v)}
               aria-label="Menu"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center text-white font-bold text-sm">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center text-white font-black text-lg shadow-sm">
                 T
               </div>
               <div className="hidden sm:block">
-                <div className="text-sm font-semibold text-slate-900 leading-tight">Total Tankstation</div>
+                <div className="text-base font-bold text-slate-900 leading-tight">Total Tankstation</div>
                 <div className="text-xs text-slate-500 leading-tight">Roostersysteem</div>
               </div>
             </div>
@@ -82,7 +82,8 @@ export default function Layout() {
             ))}
             {isManager && (
               <>
-                <span className="mx-2 h-6 w-px bg-slate-200" />
+                <span className="mx-3 h-7 w-px bg-slate-200" />
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-400 px-2">Manager</span>
                 {managerLinks.map((l) => (
                   <NavLink key={l.to} to={l.to} className={linkClass}>
                     {l.label}
@@ -94,25 +95,24 @@ export default function Layout() {
           <div className="flex items-center gap-2">
             <NavLink
               to="/notificaties"
-              className="relative p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg"
+              className="relative p-2.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors"
               aria-label="Notificaties"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
               </svg>
               {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 bg-red-500 text-white text-[10px] rounded-full min-w-[1.1rem] h-[1.1rem] flex items-center justify-center font-semibold">
+                <span className="absolute top-1.5 right-1.5 bg-red-500 text-white text-[10px] rounded-full min-w-[1.2rem] h-[1.2rem] flex items-center justify-center font-bold">
                   {unreadCount}
                 </span>
               )}
             </NavLink>
-            <div className="hidden md:flex items-center gap-2 pl-2 border-l border-slate-200">
-              <div className="w-8 h-8 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-xs font-semibold">
-                {user?.firstName?.charAt(0)}
-                {user?.lastName?.charAt(0)}
+            <div className="hidden md:flex items-center gap-3 pl-3 border-l border-slate-200">
+              <div className="w-9 h-9 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-sm font-bold">
+                {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
               </div>
               <div className="text-sm leading-tight">
-                <div className="font-medium text-slate-900">
+                <div className="font-semibold text-slate-900">
                   {user?.firstName} {user?.lastName}
                 </div>
                 <div className="text-xs text-slate-500">
@@ -120,8 +120,8 @@ export default function Layout() {
                 </div>
               </div>
             </div>
-            <button onClick={handleLogout} className="btn-ghost" aria-label="Uitloggen">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button onClick={handleLogout} className="btn-ghost text-sm" aria-label="Uitloggen">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
               <span className="hidden sm:inline">Uitloggen</span>

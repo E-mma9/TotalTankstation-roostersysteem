@@ -20,6 +20,7 @@ enum LeaveStatus {
 
 enum SwapStatus {
   PENDING
+  MANAGER_PENDING
   ACCEPTED
   DECLINED
 }
