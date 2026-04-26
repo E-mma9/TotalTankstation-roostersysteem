@@ -72,6 +72,22 @@ async function buildSchedule(month, year, employees, shifts, publish) {
       data: { year, month, createdById: manager.id },
     });
   } else {
+    const entryIds = (
+      await prisma.scheduleEntry.findMany({
+        where: { scheduleId: schedule.id },
+        select: { id: true },
+      })
+    ).map((e) => e.id);
+    if (entryIds.length > 0) {
+      await prisma.shiftSwap.deleteMany({
+        where: {
+          OR: [
+            { scheduleEntryId: { in: entryIds } },
+            { proposedEntryId: { in: entryIds } },
+          ],
+        },
+      });
+    }
     await prisma.scheduleEntry.deleteMany({ where: { scheduleId: schedule.id } });
   }
 
