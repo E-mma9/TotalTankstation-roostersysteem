@@ -15,7 +15,7 @@ export function createApp() {
 
   app.use(
     cors({
-      origin: process.env.NODE_ENV === 'development' ? 'http://localhost:5173' : true,
+      origin: (origin, cb) => cb(null, true),
       credentials: true,
     })
   );
