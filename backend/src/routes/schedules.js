@@ -10,6 +10,14 @@ const router = Router();
 router.use(authenticate);
 
 router.get(
+  '/shifts/all',
+  asyncHandler(async (_req, res) => {
+    const shifts = await prisma.shift.findMany({ orderBy: { startTime: 'asc' } });
+    res.json(shifts);
+  })
+);
+
+router.get(
   '/:year/:month',
   asyncHandler(async (req, res) => {
     const year = parseInt(req.params.year, 10);
@@ -137,14 +145,6 @@ router.post(
     });
 
     res.json({ success: true });
-  })
-);
-
-router.get(
-  '/shifts/all',
-  asyncHandler(async (_req, res) => {
-    const shifts = await prisma.shift.findMany({ orderBy: { startTime: 'asc' } });
-    res.json(shifts);
   })
 );
 

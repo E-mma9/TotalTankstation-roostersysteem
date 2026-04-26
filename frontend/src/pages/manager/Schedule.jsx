@@ -33,8 +33,8 @@ export default function ManagerSchedule() {
       schedulesApi.get(year, month),
       usersApi.list(),
       schedulesApi.shifts(),
-      availabilityApi.list(year, month),
-      leaveRequestsApi.list('APPROVED'),
+      availabilityApi.list(year, month).catch(() => []),
+      leaveRequestsApi.list('APPROVED').catch(() => []),
     ]);
 
     setSchedule(sched);
