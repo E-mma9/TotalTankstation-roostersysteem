@@ -73,7 +73,7 @@ body {
   .shift-A { @apply bg-violet-100 text-violet-800 dark:bg-violet-900/50 dark:text-violet-300; }
   .avatar {
     @apply inline-flex items-center justify-center rounded-full bg-brand-100 text-brand-700 font-bold;
-    @apply dark:bg-brand-900/50 dark:text-brand-300;
+    @apply dark:bg-brand-900/50 dark:text-brand-200;
   }
 }
 
