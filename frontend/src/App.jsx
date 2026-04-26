@@ -18,6 +18,7 @@ import Notifications from './pages/Notifications';
 import ManagerSchedule from './pages/manager/Schedule';
 import ManagerEmployees from './pages/manager/Employees';
 import ManagerRequests from './pages/manager/Requests';
+import ManagerAvailability from './pages/manager/Availability';
 
 export default function App() {
   const { setAuth, clear, setInitialized, isInitializing } = useAuthStore();
@@ -57,6 +58,7 @@ export default function App() {
           <Route path="/manager/rooster" element={<ManagerSchedule />} />
           <Route path="/manager/medewerkers" element={<ManagerEmployees />} />
           <Route path="/manager/verzoeken" element={<ManagerRequests />} />
+          <Route path="/manager/beschikbaarheid" element={<ManagerAvailability />} />
         </Route>
       </Route>
 

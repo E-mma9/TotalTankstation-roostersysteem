@@ -123,13 +123,14 @@ router.post(
 
 const reviewSchema = z.object({
   status: z.enum(['APPROVED', 'DENIED']),
+  reason: z.string().optional(),
 });
 
 router.patch(
   '/:id',
   requireManager,
   asyncHandler(async (req, res) => {
-    const { status } = reviewSchema.parse(req.body);
+    const { status, reason } = reviewSchema.parse(req.body);
     const existing = await prisma.availability.findUnique({ where: { id: req.params.id } });
     if (!existing) throw notFound('Beschikbaarheidsrecord niet gevonden');
 
@@ -140,10 +141,11 @@ router.patch(
 
     const verb = status === 'APPROVED' ? 'goedgekeurd' : 'afgewezen';
     const dateLabel = existing.date.toLocaleDateString('nl-NL', { day: '2-digit', month: 'long', year: 'numeric' });
+    const reasonSuffix = reason ? ` — ${reason}` : '';
     await notify({
       userId: existing.userId,
       type: status === 'APPROVED' ? 'AVAILABILITY_APPROVED' : 'AVAILABILITY_DENIED',
-      message: `Je beschikbaarheid voor ${dateLabel} is ${verb}`,
+      message: `Je beschikbaarheid voor ${dateLabel} is ${verb}${reasonSuffix}`,
     });
 
     res.json(updated);

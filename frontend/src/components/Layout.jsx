@@ -43,6 +43,7 @@ export default function Layout() {
     { to: '/manager/rooster', label: 'Rooster' },
     { to: '/manager/medewerkers', label: 'Medewerkers' },
     { to: '/manager/verzoeken', label: 'Verzoeken' },
+    { to: '/manager/beschikbaarheid', label: 'Beschikbaarheid' },
   ];
 
   const linkClass = ({ isActive }) =>

@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
-import { leaveRequestsApi, shiftSwapsApi, availabilityApi } from '../../api/resources';
+import { leaveRequestsApi, shiftSwapsApi } from '../../api/resources';
 import { formatDate } from '../../utils/date';
-
-const TABS = ['leave', 'swaps', 'availability'];
 
 const STATUS_LABEL = {
   PENDING: { label: 'Openstaand', cls: 'bg-amber-100 text-amber-800' },
@@ -42,13 +40,11 @@ export default function ManagerRequests() {
   const [tab, setTab] = useState('leave');
   const [leaves, setLeaves] = useState([]);
   const [swaps, setSwaps] = useState([]);
-  const [availability, setAvailability] = useState([]);
   const [loading, setLoading] = useState(false);
 
   function load() {
     leaveRequestsApi.list().then(setLeaves);
     shiftSwapsApi.list().then(setSwaps);
-    availabilityApi.listPending().then(setAvailability);
   }
 
   useEffect(() => {
@@ -89,13 +85,6 @@ export default function ManagerRequests() {
           Dienstruil {pendingSwaps.length > 0 && (
             <span className="ml-1 bg-brand-600 text-white text-xs px-1.5 py-0.5 rounded-full">
               {pendingSwaps.length}
-            </span>
-          )}
-        </button>
-        <button onClick={() => setTab('availability')} className={tabClass('availability')}>
-          Beschikbaarheid {availability.length > 0 && (
-            <span className="ml-1 bg-brand-600 text-white text-xs px-1.5 py-0.5 rounded-full">
-              {availability.length}
             </span>
           )}
         </button>
@@ -210,39 +199,6 @@ export default function ManagerRequests() {
         </div>
       )}
 
-      {/* ── Beschikbaarheid ── */}
-      {tab === 'availability' && (
-        <div className="space-y-6">
-          <section>
-            <h2 className="font-medium text-slate-700 mb-3">Openstaand</h2>
-            {availability.length === 0 ? (
-              <div className="card text-slate-500">Geen openstaande beschikbaarheidswijzigingen.</div>
-            ) : (
-              <div className="space-y-2">
-                {availability.map((a) => (
-                  <div key={a.id} className="card flex items-center justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="font-medium">{a.user.firstName} {a.user.lastName}</p>
-                      <p className="text-sm text-slate-500">
-                        {formatDate(a.date)} ·{' '}
-                        <span className={a.isAvailable ? 'text-green-700' : 'text-red-700'}>
-                          {a.isAvailable ? 'beschikbaar' : 'niet beschikbaar'}
-                        </span>
-                        {a.notes && ` — ${a.notes}`}
-                      </p>
-                    </div>
-                    <ActionButtons
-                      loading={loading}
-                      onApprove={() => act(() => availabilityApi.review(a.id, 'APPROVED'))}
-                      onDeny={() => act(() => availabilityApi.review(a.id, 'DENIED'))}
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-        </div>
-      )}
     </div>
   );
 }

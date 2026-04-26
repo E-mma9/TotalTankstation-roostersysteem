@@ -15,7 +15,8 @@ export const availabilityApi = {
   listPending: () => api.get('/availability/pending').then((r) => r.data),
   save: (year, month, entries) =>
     api.post('/availability', { year, month, entries }).then((r) => r.data),
-  review: (id, status) => api.patch(`/availability/${id}`, { status }).then((r) => r.data),
+  review: (id, status, reason) =>
+    api.patch(`/availability/${id}`, { status, ...(reason ? { reason } : {}) }).then((r) => r.data),
 };
 
 export const schedulesApi = {
