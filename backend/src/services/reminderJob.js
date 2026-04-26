@@ -47,7 +47,8 @@ export async function sendUnpublishedScheduleReminder() {
   const today = new Date();
   const targetMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
   const daysUntilMonthStart = Math.ceil((targetMonth - today) / (1000 * 60 * 60 * 24));
-  if (daysUntilMonthStart > 10 || daysUntilMonthStart < 0) return;
+  // Alleen herinneren op precies 10 en 3 dagen voor maandstart
+  if (daysUntilMonthStart !== 10 && daysUntilMonthStart !== 3) return;
 
   const schedule = await prisma.schedule.findUnique({
     where: { year_month: { year: targetMonth.getFullYear(), month: targetMonth.getMonth() + 1 } },

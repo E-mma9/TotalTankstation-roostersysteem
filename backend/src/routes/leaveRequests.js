@@ -49,12 +49,13 @@ router.post(
       select: { id: true },
     });
     const formatted = day.toLocaleDateString('nl-NL', { day: '2-digit', month: 'long', year: 'numeric' });
+    const employeeName = `${req.user.firstName} ${req.user.lastName}`;
     await Promise.all(
       managers.map((m) =>
         notify({
           userId: m.id,
           type: 'LEAVE_REQUEST_NEW',
-          message: `Nieuw vrije-dagenverzoek voor ${formatted}`,
+          message: `${employeeName} vraagt een vrije dag aan op ${formatted}`,
         })
       )
     );
