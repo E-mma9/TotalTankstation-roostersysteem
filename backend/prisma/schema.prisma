@@ -30,6 +30,12 @@ enum EntryStatus {
   AFWEZIG
 }
 
+enum AvailabilityStatus {
+  PENDING
+  APPROVED
+  DENIED
+}
+
 model User {
   id                  String    @id @default(uuid())
   email               String    @unique
@@ -43,13 +49,14 @@ model User {
   mustChangePassword  Boolean   @default(false) @map("must_change_password")
   createdAt           DateTime  @default(now()) @map("created_at")
 
-  availability     Availability[]
-  scheduleEntries  ScheduleEntry[]
-  schedulesCreated Schedule[]      @relation("CreatedBy")
-  leaveRequests    LeaveRequest[]
-  leaveReviewed    LeaveRequest[]  @relation("Reviewer")
-  swapsRequested   ShiftSwap[]     @relation("Requester")
-  swapsTargeted    ShiftSwap[]     @relation("Target")
+  availability          Availability[]
+  availabilityReviewed  Availability[]  @relation("AvailabilityReviewer")
+  scheduleEntries       ScheduleEntry[]
+  schedulesCreated      Schedule[]      @relation("CreatedBy")
+  leaveRequests         LeaveRequest[]
+  leaveReviewed         LeaveRequest[]  @relation("Reviewer")
+  swapsRequested        ShiftSwap[]     @relation("Requester")
+  swapsTargeted         ShiftSwap[]     @relation("Target")
   notifications    Notification[]
   passwordResets   PasswordReset[]
   refreshTokens    RefreshToken[]
@@ -69,17 +76,22 @@ model Shift {
 }
 
 model Availability {
-  id           String   @id @default(uuid())
-  userId       String   @map("user_id")
-  date         DateTime @db.Date
-  isAvailable  Boolean  @map("is_available")
+  id           String             @id @default(uuid())
+  userId       String             @map("user_id")
+  date         DateTime           @db.Date
+  isAvailable  Boolean            @map("is_available")
   notes        String?
-  submittedAt  DateTime @default(now()) @map("submitted_at")
+  submittedAt  DateTime           @default(now()) @map("submitted_at")
+  status       AvailabilityStatus @default(APPROVED)
+  reviewedById String?            @map("reviewed_by")
+  reviewedAt   DateTime?          @map("reviewed_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewer User? @relation("AvailabilityReviewer", fields: [reviewedById], references: [id])
 
   @@unique([userId, date])
   @@index([date])
+  @@index([status])
   @@map("availability")
 }
 

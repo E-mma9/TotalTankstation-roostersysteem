@@ -90,6 +90,7 @@ router.patch(
   '/:id',
   asyncHandler(async (req, res) => {
     const { status } = respondSchema.parse(req.body);
+    const isManager = req.user.role === 'MANAGER';
     const swap = await prisma.shiftSwap.findUnique({
       where: { id: req.params.id },
       include: {
@@ -99,7 +100,7 @@ router.patch(
       },
     });
     if (!swap) throw notFound('Verzoek niet gevonden');
-    if (swap.targetId !== req.user.id) throw forbidden('Dit verzoek is niet aan jou gericht');
+    if (!isManager && swap.targetId !== req.user.id) throw forbidden('Dit verzoek is niet aan jou gericht');
     if (swap.status !== 'PENDING') throw badRequest('Verzoek is al beoordeeld');
 
     if (status === 'ACCEPTED') {
@@ -123,14 +124,22 @@ router.patch(
       await prisma.shiftSwap.update({ where: { id: swap.id }, data: { status: 'DECLINED' } });
     }
 
-    const verb = status === 'ACCEPTED' ? 'geaccepteerd' : 'afgewezen';
+    const verb = status === 'ACCEPTED' ? 'goedgekeurd' : 'afgewezen';
+    const actorName = isManager ? 'De manager' : swap.target.firstName;
     await notify({
       userId: swap.requesterId,
       type: status === 'ACCEPTED' ? 'SWAP_ACCEPTED' : 'SWAP_DECLINED',
-      message: `${swap.target.firstName} heeft je dienst-aanvraag ${verb}`,
-      emailSubject: `Dienst-aanvraag ${verb}`,
-      emailBody: `Je dienst-aanvraag is ${verb} door ${swap.target.firstName} ${swap.target.lastName}.`,
+      message: `${actorName} heeft je dienstruil-aanvraag ${verb}`,
+      emailSubject: `Dienstruil-aanvraag ${verb}`,
+      emailBody: `Je dienstruil-aanvraag is ${verb} door ${actorName}.`,
     });
+    if (!isManager) {
+      await notify({
+        userId: swap.targetId,
+        type: status === 'ACCEPTED' ? 'SWAP_ACCEPTED' : 'SWAP_DECLINED',
+        message: `Je hebt de dienstruil-aanvraag ${verb}`,
+      });
+    }
 
     res.json({ success: true });
   })

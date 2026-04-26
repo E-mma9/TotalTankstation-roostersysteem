@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../db.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, requireManager } from '../middleware/auth.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
-import { badRequest } from '../utils/httpError.js';
+import { badRequest, notFound, forbidden } from '../utils/httpError.js';
+import { notify } from '../services/notificationService.js';
 
 const router = Router();
 router.use(authenticate);
@@ -23,10 +24,31 @@ router.get(
     const where = { date: { gte: start, lt: end } };
     if (req.user.role !== 'MANAGER') where.userId = req.user.id;
     if (req.query.userId && req.user.role === 'MANAGER') where.userId = req.query.userId;
+    if (req.query.status && req.user.role === 'MANAGER') where.status = req.query.status;
 
     const rows = await prisma.availability.findMany({
       where,
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true } },
+        reviewer: { select: { id: true, firstName: true, lastName: true } },
+      },
       orderBy: [{ userId: 'asc' }, { date: 'asc' }],
+    });
+    res.json(rows);
+  })
+);
+
+// Manager: alle openstaande beschikbaarheidswijzigingen
+router.get(
+  '/pending',
+  requireManager,
+  asyncHandler(async (req, res) => {
+    const rows = await prisma.availability.findMany({
+      where: { status: 'PENDING' },
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true } },
+      },
+      orderBy: [{ submittedAt: 'asc' }],
     });
     res.json(rows);
   })
@@ -61,18 +83,70 @@ router.post(
         const date = new Date(entry.date);
         return prisma.availability.upsert({
           where: { userId_date: { userId: req.user.id, date } },
-          update: { isAvailable: entry.isAvailable, notes: entry.notes, submittedAt: new Date() },
+          update: {
+            isAvailable: entry.isAvailable,
+            notes: entry.notes,
+            submittedAt: new Date(),
+            status: 'PENDING',
+            reviewedById: null,
+            reviewedAt: null,
+          },
           create: {
             userId: req.user.id,
             date,
             isAvailable: entry.isAvailable,
             notes: entry.notes,
+            status: 'PENDING',
           },
         });
       })
     );
 
+    const managers = await prisma.user.findMany({
+      where: { role: 'MANAGER', isActive: true },
+      select: { id: true },
+    });
+    const monthLabel = new Date(year, month - 1, 1).toLocaleString('nl-NL', { month: 'long', year: 'numeric' });
+    await Promise.all(
+      managers.map((m) =>
+        notify({
+          userId: m.id,
+          type: 'AVAILABILITY_SUBMITTED',
+          message: `Beschikbaarheidswijziging ingediend voor ${monthLabel} — wacht op goedkeuring`,
+        })
+      )
+    );
+
     res.json({ success: true, count: entries.length });
+  })
+);
+
+const reviewSchema = z.object({
+  status: z.enum(['APPROVED', 'DENIED']),
+});
+
+router.patch(
+  '/:id',
+  requireManager,
+  asyncHandler(async (req, res) => {
+    const { status } = reviewSchema.parse(req.body);
+    const existing = await prisma.availability.findUnique({ where: { id: req.params.id } });
+    if (!existing) throw notFound('Beschikbaarheidsrecord niet gevonden');
+
+    const updated = await prisma.availability.update({
+      where: { id: req.params.id },
+      data: { status, reviewedById: req.user.id, reviewedAt: new Date() },
+    });
+
+    const verb = status === 'APPROVED' ? 'goedgekeurd' : 'afgewezen';
+    const dateLabel = existing.date.toLocaleDateString('nl-NL', { day: '2-digit', month: 'long', year: 'numeric' });
+    await notify({
+      userId: existing.userId,
+      type: status === 'APPROVED' ? 'AVAILABILITY_APPROVED' : 'AVAILABILITY_DENIED',
+      message: `Je beschikbaarheid voor ${dateLabel} is ${verb}`,
+    });
+
+    res.json(updated);
   })
 );
 
