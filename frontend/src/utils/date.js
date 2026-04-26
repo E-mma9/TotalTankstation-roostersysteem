@@ -20,8 +20,16 @@ export function daysInMonth(year, month) {
 }
 
 export function ymd(date) {
-  const d = typeof date === 'string' ? new Date(date) : date;
-  return d.toISOString().slice(0, 10);
+  // For API date strings (UTC midnight) use toISOString; for locally-created Date objects
+  // use local date parts to avoid UTC-offset shifting the date back by one day.
+  if (typeof date === 'string') {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date)) return date;
+    return new Date(date).toISOString().slice(0, 10);
+  }
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 export function formatDate(dateLike, opts = { day: '2-digit', month: 'long', year: 'numeric' }) {

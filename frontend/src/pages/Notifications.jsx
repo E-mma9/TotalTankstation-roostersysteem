@@ -1,11 +1,16 @@
 import { useEffect, useState } from 'react';
 import { notificationsApi } from '../api/resources';
+import { useAuthStore } from '../store/authStore';
 
 export default function Notifications() {
   const [items, setItems] = useState([]);
+  const { setUnreadCount } = useAuthStore();
 
   function load() {
-    notificationsApi.list().then(setItems);
+    notificationsApi.list().then((data) => {
+      setItems(data);
+      setUnreadCount(data.filter((n) => !n.isRead).length);
+    });
   }
 
   useEffect(() => {
