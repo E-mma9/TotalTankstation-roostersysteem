@@ -1,10 +1,16 @@
 import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+
+function RoleRedirect() {
+  const { user } = useAuthStore();
+  return <Navigate to={user?.role === 'MANAGER' ? '/manager/rooster' : '/dashboard'} replace />;
+}
 import { useAuthStore } from './store/authStore';
 import { authApi } from './api/auth';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import ManagerRoute from './components/ManagerRoute';
+import EmployeeRoute from './components/EmployeeRoute';
 import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
@@ -46,14 +52,16 @@ export default function App() {
       <Route path="/reset-password" element={<ResetPassword />} />
 
       <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/dashboard/collegas" element={<Colleagues />} />
-        <Route path="/beschikbaarheid" element={<Availability />} />
-        <Route path="/vrije-dagen" element={<LeaveRequests />} />
-        <Route path="/dienstruil" element={<ShiftSwaps />} />
+        <Route path="/" element={<RoleRedirect />} />
         <Route path="/notificaties" element={<Notifications />} />
         <Route path="/wachtwoord-wijzigen" element={<ChangePassword />} />
+        <Route element={<EmployeeRoute />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard/collegas" element={<Colleagues />} />
+          <Route path="/beschikbaarheid" element={<Availability />} />
+          <Route path="/vrije-dagen" element={<LeaveRequests />} />
+          <Route path="/dienstruil" element={<ShiftSwaps />} />
+        </Route>
         <Route element={<ManagerRoute />}>
           <Route path="/manager/rooster" element={<ManagerSchedule />} />
           <Route path="/manager/medewerkers" element={<ManagerEmployees />} />

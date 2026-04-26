@@ -20,7 +20,9 @@ export default function Login() {
     try {
       const data = await authApi.login(email, password);
       setAuth(data.accessToken, data.user);
-      navigate(data.user.mustChangePassword ? '/wachtwoord-wijzigen' : '/dashboard');
+      if (data.user.mustChangePassword) navigate('/wachtwoord-wijzigen');
+      else if (data.user.role === 'MANAGER') navigate('/manager/rooster');
+      else navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.error || 'Inloggen mislukt');
     } finally {

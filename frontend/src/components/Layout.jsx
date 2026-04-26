@@ -86,22 +86,11 @@ export default function Layout() {
 
           {/* Desktop nav */}
           <nav className="hidden lg:flex items-center gap-0.5">
-            {employeeLinks.map((l) => (
+            {(isManager ? managerLinks : employeeLinks).map((l) => (
               <NavLink key={l.to} to={l.to} className={navLinkClass} end={l.to === '/dashboard'}>
                 {l.label}
               </NavLink>
             ))}
-            {isManager && (
-              <>
-                <span className="mx-2 h-5 w-px" style={{ background: '#E8E3DA' }} />
-                <span className="text-xs font-bold uppercase tracking-widest px-2 mr-0.5" style={{ color: '#A09890' }}>
-                  Manager
-                </span>
-                {managerLinks.map((l) => (
-                  <NavLink key={l.to} to={l.to} className={navLinkClass}>{l.label}</NavLink>
-                ))}
-              </>
-            )}
           </nav>
 
           {/* Right: bell + user + logout */}
@@ -157,22 +146,11 @@ export default function Layout() {
         {/* Mobile menu */}
         {menuOpen && (
           <nav className="lg:hidden px-4 py-3 space-y-1" style={{ borderTop: '1px solid #E8E3DA', background: '#FFFFFF' }}>
-            <p className="text-xs font-bold uppercase tracking-widest px-3 py-1" style={{ color: '#A09890' }}>Medewerker</p>
-            {employeeLinks.map((l) => (
+            {(isManager ? managerLinks : employeeLinks).map((l) => (
               <NavLink key={l.to} to={l.to} className={navLinkClass} end={l.to === '/dashboard'} onClick={() => setMenuOpen(false)}>
                 {l.label}
               </NavLink>
             ))}
-            {isManager && (
-              <>
-                <p className="text-xs font-bold uppercase tracking-widest px-3 py-1 pt-3" style={{ color: '#A09890' }}>Manager</p>
-                {managerLinks.map((l) => (
-                  <NavLink key={l.to} to={l.to} className={navLinkClass} onClick={() => setMenuOpen(false)}>
-                    {l.label}
-                  </NavLink>
-                ))}
-              </>
-            )}
           </nav>
         )}
       </header>
