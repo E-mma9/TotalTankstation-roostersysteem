@@ -88,7 +88,7 @@ export default function Dashboard() {
             return (
               <div
                 key={e.id}
-                className={`card border-l-4 hover:shadow-md transition-shadow ${info?.color ?? 'border-slate-300'} ${isToday ? 'ring-2 ring-brand-400' : ''}`}
+                className={`card border-l-4 hover:shadow-md transition-shadow ${info?.color ?? 'border-slate-300'} ${isToday ? 'ring-2 ring-brand-500' : ''}`}
               >
                 <div className="flex items-start justify-between mb-2">
                   <div>
