@@ -237,10 +237,13 @@ Triggers die een notificatie (in-app + e-mail) versturen:
 | Event | Ontvanger |
 |-------|-----------|
 | Rooster gepubliceerd | Alle actieve medewerkers |
+| Herinnering: morgen werken | Medewerker met dienst de volgende dag |
 | Vrije-dagenverzoek goedgekeurd/afgewezen | Aanvragende medewerker |
 | Overname/ruilverzoek ontvangen | Target medewerker |
 | Overname/ruilverzoek geaccepteerd/afgewezen | Aanvragende medewerker |
 | Account aangemaakt (tijdelijk wachtwoord) | Nieuwe medewerker |
+
+**Dagelijkse herinnering:** Een cron-job draait elke avond om 18:00 en stuurt iedere medewerker met een dienst voor de volgende dag een notificatie (in-app + e-mail) met het tijdstip van hun dienst.
 
 ---
 
