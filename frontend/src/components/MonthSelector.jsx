@@ -11,9 +11,9 @@ export default function MonthSelector({ year, month, onChange }) {
         }}
         aria-label="Vorige maand"
       >
-        ←
+        ← Vorige
       </button>
-      <span className="text-lg font-medium min-w-[10rem] text-center">
+      <span className="text-lg font-semibold min-w-[11rem] text-center">
         {monthName(month)} {year}
       </span>
       <button
@@ -24,7 +24,7 @@ export default function MonthSelector({ year, month, onChange }) {
         }}
         aria-label="Volgende maand"
       >
-        →
+        Volgende →
       </button>
     </div>
   );

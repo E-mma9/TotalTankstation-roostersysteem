@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { schedulesApi } from '../api/resources';
 import MonthSelector from '../components/MonthSelector';
-import { currentYearMonth, formatDay, ymd } from '../utils/date';
+import { currentYearMonth, ymd } from '../utils/date';
+
+const SHIFT_LABEL = { V: 'Vroege dienst', M: 'Middagdienst', A: 'Avonddienst' };
 
 export default function Dashboard() {
   const { user } = useAuthStore();
@@ -26,7 +28,7 @@ export default function Dashboard() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <h1 className="text-2xl font-semibold">Mijn rooster</h1>
         <MonthSelector year={year} month={month} onChange={(y, m) => setYM({ year: y, month: m })} />
       </div>
@@ -44,32 +46,42 @@ export default function Dashboard() {
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {myEntries.map((e) => (
-            <div key={e.id} className="card-compact hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between mb-3">
+            <div key={e.id} className="card hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between mb-2">
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-slate-500 font-medium">
+                  <p className="text-sm text-slate-500 capitalize">
                     {new Date(e.date).toLocaleDateString('nl-NL', { weekday: 'long' })}
                   </p>
-                  <p className="text-2xl font-semibold tabular-nums">
+                  <p className="text-3xl font-bold tabular-nums leading-tight">
                     {new Date(e.date).getDate()}{' '}
-                    <span className="text-sm font-normal text-slate-500">
+                    <span className="text-base font-normal text-slate-500">
                       {new Date(e.date).toLocaleDateString('nl-NL', { month: 'long' })}
                     </span>
                   </p>
                 </div>
-                <span className={`shift-pill shift-${e.shift.name}`}>{e.shift.name}</span>
+                <span className={`shift-pill shift-${e.shift.name} text-base px-3 py-1.5`}>
+                  {e.shift.name}
+                </span>
               </div>
-              <p className="text-sm text-slate-600 tabular-nums mb-3">
+
+              <p className="text-base font-semibold text-slate-700 mb-0.5">
+                {SHIFT_LABEL[e.shift.name] ?? e.shift.name}
+              </p>
+              <p className="text-xl font-semibold tabular-nums text-slate-800 mb-3">
                 {e.shift.startTime} – {e.shift.endTime}
               </p>
+
               {e.status !== 'WERKEND' && (
-                <p className="text-xs text-amber-700 mb-2">Status: {e.status.toLowerCase()}</p>
+                <p className="text-sm text-amber-700 bg-amber-50 rounded px-2 py-1 mb-3">
+                  Status: {e.status.toLowerCase()}
+                </p>
               )}
+
               <Link
                 to={`/dienstruil?entry=${e.id}`}
-                className="text-sm text-brand-600 hover:text-brand-700 font-medium"
+                className="btn-secondary text-sm w-full text-center"
               >
-                Aanbieden aan collega →
+                Dienst aanbieden aan collega
               </Link>
             </div>
           ))}
@@ -77,8 +89,8 @@ export default function Dashboard() {
       )}
 
       <div className="mt-6">
-        <Link to="/dashboard/collegas" className="text-brand-600 hover:underline text-sm">
-          Bekijk collega's per dag →
+        <Link to="/dashboard/collegas" className="text-brand-600 hover:underline text-base font-medium">
+          Bekijk wie er wanneer werkt →
         </Link>
       </div>
     </div>

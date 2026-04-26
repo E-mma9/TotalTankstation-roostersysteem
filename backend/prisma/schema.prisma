@@ -82,7 +82,7 @@ model Availability {
   isAvailable  Boolean            @map("is_available")
   notes        String?
   submittedAt  DateTime           @default(now()) @map("submitted_at")
-  status       AvailabilityStatus @default(APPROVED)
+  status       AvailabilityStatus @default(PENDING)
   reviewedById String?            @map("reviewed_by")
   reviewedAt   DateTime?          @map("reviewed_at")
 

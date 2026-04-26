@@ -23,7 +23,10 @@ router.get(
 
     const where = { date: { gte: start, lt: end } };
     if (req.user.role !== 'MANAGER') where.userId = req.user.id;
-    if (req.query.userId && req.user.role === 'MANAGER') where.userId = req.query.userId;
+    if (req.query.userId && req.user.role === 'MANAGER') {
+      if (!/^[0-9a-f-]{36}$/.test(req.query.userId)) throw badRequest('Ongeldig userId');
+      where.userId = req.query.userId;
+    }
     if (req.query.status && req.user.role === 'MANAGER') where.status = req.query.status;
 
     const rows = await prisma.availability.findMany({

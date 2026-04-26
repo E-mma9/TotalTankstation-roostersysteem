@@ -4,9 +4,9 @@ import MonthSelector from '../components/MonthSelector';
 import { daysInMonth, shiftMonth, ymd, isWeekend, currentYearMonth } from '../utils/date';
 
 const STATUS_ICON = {
-  PENDING: { label: 'wacht op goedkeuring', cls: 'text-amber-600' },
-  APPROVED: { label: 'goedgekeurd', cls: 'text-green-700' },
-  DENIED: { label: 'afgewezen', cls: 'text-red-600' },
+  PENDING: { label: 'Wacht op goedkeuring', cls: 'text-amber-700' },
+  APPROVED: { label: 'Goedgekeurd', cls: 'text-green-700' },
+  DENIED: { label: 'Afgewezen', cls: 'text-red-600' },
 };
 
 export default function Availability() {
@@ -15,7 +15,7 @@ export default function Availability() {
   const [{ year, month }, setYM] = useState(initial);
   const [entries, setEntries] = useState({});
   const [saving, setSaving] = useState(false);
-  const [feedback, setFeedback] = useState('');
+  const [feedback, setFeedback] = useState(null); // { type: 'success'|'error', text }
 
   const days = useMemo(() => {
     const total = daysInMonth(year, month);
@@ -34,15 +34,16 @@ export default function Availability() {
       });
       setEntries(map);
     });
+    setFeedback(null);
   }, [year, month]);
 
-  function toggle(day, currentAvailable) {
+  function toggle(day) {
     const key = ymd(day);
     setEntries((prev) => ({
       ...prev,
       [key]: {
         ...(prev[key] || {}),
-        isAvailable: currentAvailable === true ? false : true,
+        isAvailable: prev[key]?.isAvailable === true ? false : true,
         notes: prev[key]?.notes || '',
         status: null,
       },
@@ -51,7 +52,7 @@ export default function Availability() {
 
   async function handleSave() {
     setSaving(true);
-    setFeedback('');
+    setFeedback(null);
     try {
       const payload = days.map((d) => {
         const key = ymd(d);
@@ -63,16 +64,15 @@ export default function Availability() {
         };
       });
       await availabilityApi.save(year, month, payload);
-      setFeedback('Ingediend — wacht op goedkeuring van de manager');
-      // reload to get status
       const rows = await availabilityApi.list(year, month);
       const map = {};
       rows.forEach((r) => {
         map[ymd(r.date)] = { isAvailable: r.isAvailable, notes: r.notes || '', status: r.status || null };
       });
       setEntries(map);
+      setFeedback({ type: 'success', text: 'Ingediend! De manager beoordeelt je beschikbaarheid.' });
     } catch (err) {
-      setFeedback(err.response?.data?.error || 'Opslaan mislukt');
+      setFeedback({ type: 'error', text: err.response?.data?.error || 'Opslaan mislukt' });
     } finally {
       setSaving(false);
     }
@@ -80,19 +80,33 @@ export default function Availability() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold">Beschikbaarheid</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <h1 className="text-2xl font-semibold">Mijn beschikbaarheid</h1>
         <MonthSelector year={year} month={month} onChange={(y, m) => setYM({ year: y, month: m })} />
       </div>
 
-      <p className="text-sm text-slate-600 mb-4">
-        Geef per dag aan of je beschikbaar bent. Na opslaan beoordeelt de manager je opgave.
-      </p>
+      <div className="card mb-5 bg-blue-50 border-blue-200">
+        <p className="text-base text-blue-900 font-medium mb-1">Hoe werkt het?</p>
+        <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+          <li>Klik op een dag om aan te geven of je beschikbaar bent (groen) of niet (rood).</li>
+          <li>Klik op <strong>Indienen bij manager</strong> als je klaar bent.</li>
+          <li>De manager beoordeelt je opgave en je krijgt een berichtje.</li>
+        </ol>
+      </div>
 
-      <div className="flex items-center gap-4 text-xs text-slate-500 mb-4">
-        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400 inline-block" /> wacht op goedkeuring</span>
-        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500 inline-block" /> goedgekeurd</span>
-        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-400 inline-block" /> afgewezen</span>
+      <div className="flex flex-wrap items-center gap-5 text-sm text-slate-600 mb-4">
+        <span className="flex items-center gap-2">
+          <span className="w-4 h-4 rounded bg-green-200 border border-green-400 inline-block" />
+          Beschikbaar
+        </span>
+        <span className="flex items-center gap-2">
+          <span className="w-4 h-4 rounded bg-red-200 border border-red-400 inline-block" />
+          Niet beschikbaar
+        </span>
+        <span className="flex items-center gap-2">
+          <span className="w-4 h-4 rounded bg-white border border-slate-300 inline-block" />
+          Nog niet ingevuld
+        </span>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2 mb-6">
@@ -102,27 +116,34 @@ export default function Availability() {
           const available = value ? value.isAvailable : null;
           const status = value?.status ?? null;
 
-          let borderCls = 'border-slate-200 hover:bg-slate-50';
+          let borderCls = 'border-slate-300 hover:bg-slate-50';
           let bgCls = 'bg-white';
-          if (available === true) { bgCls = 'bg-green-50'; borderCls = 'border-green-300'; }
-          if (available === false) { bgCls = 'bg-red-50'; borderCls = 'border-red-300'; }
+          if (available === true) { bgCls = 'bg-green-100'; borderCls = 'border-green-400'; }
+          if (available === false) { bgCls = 'bg-red-100'; borderCls = 'border-red-400'; }
 
           const statusInfo = status ? STATUS_ICON[status] : null;
 
           return (
             <button
               key={key}
-              onClick={() => toggle(d, available)}
-              className={`rounded-md border p-3 text-left text-sm transition-colors ${bgCls} ${borderCls} ${isWeekend(d) ? 'ring-1 ring-slate-200' : ''}`}
+              onClick={() => toggle(d)}
+              className={`rounded-md border-2 p-3 text-left transition-colors ${bgCls} ${borderCls} ${isWeekend(d) ? 'ring-1 ring-slate-300' : ''}`}
             >
-              <div className="font-medium">
-                {d.getDate()} {d.toLocaleDateString('nl-NL', { weekday: 'short' })}
+              <div className="font-bold text-base">
+                {d.getDate()}
               </div>
-              <div className="text-xs text-slate-500 truncate">
-                {available === true ? 'beschikbaar' : available === false ? 'niet' : 'klik om te zetten'}
+              <div className="text-xs text-slate-600 capitalize">
+                {d.toLocaleDateString('nl-NL', { weekday: 'short' })}
+              </div>
+              <div className="text-xs mt-1 font-medium">
+                {available === true
+                  ? <span className="text-green-800">Beschikbaar</span>
+                  : available === false
+                    ? <span className="text-red-800">Niet</span>
+                    : <span className="text-slate-400">—</span>}
               </div>
               {statusInfo && (
-                <div className={`text-xs mt-1 truncate ${statusInfo.cls}`}>
+                <div className={`text-xs mt-0.5 ${statusInfo.cls}`}>
                   {statusInfo.label}
                 </div>
               )}
@@ -131,11 +152,19 @@ export default function Availability() {
         })}
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-4">
         <button onClick={handleSave} disabled={saving} className="btn-primary">
           {saving ? 'Indienen...' : 'Indienen bij manager'}
         </button>
-        {feedback && <span className="text-sm text-slate-600">{feedback}</span>}
+        {feedback && (
+          <div className={`rounded-lg px-4 py-2 text-base font-medium ${
+            feedback.type === 'success'
+              ? 'bg-green-100 text-green-800 border border-green-300'
+              : 'bg-red-100 text-red-800 border border-red-300'
+          }`}>
+            {feedback.text}
+          </div>
+        )}
       </div>
     </div>
   );

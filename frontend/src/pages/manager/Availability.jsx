@@ -130,10 +130,6 @@ export default function ManagerAvailability() {
 
       {employees.length === 0 ? (
         <div className="card text-slate-500">Geen medewerkers gevonden.</div>
-      ) : entries.length === 0 ? (
-        <div className="card text-slate-500">
-          Geen beschikbaarheid ingevuld voor deze maand.
-        </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
           {days.map((d) => {
@@ -214,7 +210,7 @@ export default function ManagerAvailability() {
                         disabled={loading}
                         className="flex-1 text-xs bg-green-600 text-white rounded px-2 py-1 hover:bg-green-700 disabled:opacity-50"
                       >
-                        Goed
+                        Goedkeuren
                       </button>
                       <button
                         onClick={() => openDeny(entry.id)}

@@ -116,9 +116,12 @@ export default function ShiftSwaps() {
                   {STATUS_LABELS[s.status]}
                 </span>
               </div>
-              <p className="text-sm text-slate-600">
-                Vraagt of jij {formatDate(s.scheduleEntry.date)} dienst {s.scheduleEntry.shift.name} (
-                {s.scheduleEntry.shift.startTime}–{s.scheduleEntry.shift.endTime}) wil overnemen
+              <p className="text-base text-slate-700">
+                Kan jij de dienst overnemen op{' '}
+                <strong>{formatDate(s.scheduleEntry.date)}</strong>?
+              </p>
+              <p className="text-sm text-slate-500">
+                Dienst {s.scheduleEntry.shift.name} · {s.scheduleEntry.shift.startTime}–{s.scheduleEntry.shift.endTime}
               </p>
               {s.status === 'PENDING' && (
                 <div className="flex gap-2 mt-3">
