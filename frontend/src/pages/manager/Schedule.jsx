@@ -51,7 +51,10 @@ export default function ManagerSchedule() {
 
     const gridMap = {};
     (sched?.entries || []).forEach((e) => {
-      gridMap[`${e.userId}|${ymd(e.date)}`] = { shiftId: e.shiftId, status: e.status || 'WERKEND' };
+      const key = `${e.userId}|${ymd(e.date)}`;
+      // Sla entries op leave-dagen over (mogen niet ingepland zijn)
+      if (leaveMap[key]) return;
+      gridMap[key] = { shiftId: e.shiftId, status: e.status || 'WERKEND' };
     });
     setGrid(gridMap);
   }
@@ -60,6 +63,7 @@ export default function ManagerSchedule() {
 
   function setCell(userId, day, shiftId) {
     const key = `${userId}|${ymd(day)}`;
+    if (leaves[key]) return; // goedgekeurd vrij — niet inplanbaar
     setGrid((prev) => {
       const next = { ...prev };
       if (!shiftId) delete next[key];
@@ -286,20 +290,29 @@ export default function ManagerSchedule() {
 
                         return (
                           <td key={key} className={`p-0.5 border-b border-slate-100 ${cellBg}`}>
-                            <select
-                              value={cell?.shiftId || ''}
-                              onChange={(e) => setCell(u.id, d, e.target.value)}
-                              disabled={isPublished}
-                              title={shift ? `${shift.name}: ${shift.startTime}–${shift.endTime}` : 'Geen dienst'}
-                              className={`w-full text-xs font-bold rounded px-1 py-1.5 border-0 cursor-pointer focus:ring-1 focus:ring-brand-500 focus:outline-none transition-colors ${
-                                sc ? `${sc.bg}` : 'bg-transparent text-slate-400'
-                              } ${isPublished ? 'opacity-70 cursor-default' : ''}`}
-                            >
-                              <option value="">—</option>
-                              {shifts.map((s) => (
-                                <option key={s.id} value={s.id}>{s.name}</option>
-                              ))}
-                            </select>
+                            {onLeave ? (
+                              <div
+                                className="w-full text-[10px] font-bold rounded px-1 py-1.5 text-blue-700 text-center select-none"
+                                title="Goedgekeurde vrije dag — niet inplanbaar"
+                              >
+                                Vrij
+                              </div>
+                            ) : (
+                              <select
+                                value={cell?.shiftId || ''}
+                                onChange={(e) => setCell(u.id, d, e.target.value)}
+                                disabled={isPublished}
+                                title={shift ? `${shift.name}: ${shift.startTime}–${shift.endTime}` : 'Geen dienst'}
+                                className={`w-full text-xs font-bold rounded px-1 py-1.5 border-0 cursor-pointer focus:ring-1 focus:ring-brand-500 focus:outline-none transition-colors ${
+                                  sc ? `${sc.bg}` : 'bg-transparent text-slate-400'
+                                } ${isPublished ? 'opacity-70 cursor-default' : ''}`}
+                              >
+                                <option value="">—</option>
+                                {shifts.map((s) => (
+                                  <option key={s.id} value={s.id}>{s.name}</option>
+                                ))}
+                              </select>
+                            )}
                           </td>
                         );
                       })}

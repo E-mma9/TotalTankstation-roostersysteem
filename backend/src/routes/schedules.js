@@ -89,6 +89,39 @@ router.put(
 
     const { entries } = entriesSchema.parse(req.body);
 
+    // Blokkeer entries op dagen waar de medewerker goedgekeurd vrij heeft
+    if (entries.length > 0) {
+      const userIds = [...new Set(entries.map((e) => e.userId))];
+      const dates = [...new Set(entries.map((e) => e.date))].map((d) => new Date(d));
+      const conflicts = await prisma.leaveRequest.findMany({
+        where: {
+          status: 'APPROVED',
+          userId: { in: userIds },
+          date: { in: dates },
+        },
+        include: { user: { select: { firstName: true, lastName: true } } },
+      });
+      const conflictKeys = new Set(
+        conflicts.map((l) => `${l.userId}|${l.date.toISOString().slice(0, 10)}`)
+      );
+      const blocked = entries.filter((e) =>
+        conflictKeys.has(`${e.userId}|${new Date(e.date).toISOString().slice(0, 10)}`)
+      );
+      if (blocked.length > 0) {
+        const first = conflicts.find(
+          (l) =>
+            l.userId === blocked[0].userId &&
+            l.date.toISOString().slice(0, 10) === new Date(blocked[0].date).toISOString().slice(0, 10)
+        );
+        const name = first ? `${first.user.firstName} ${first.user.lastName}` : 'Medewerker';
+        const dateStr = new Date(blocked[0].date).toLocaleDateString('nl-NL');
+        throw badRequest(
+          `${name} heeft goedgekeurd vrij op ${dateStr} en kan niet worden ingepland` +
+            (blocked.length > 1 ? ` (en ${blocked.length - 1} andere conflict${blocked.length - 1 === 1 ? '' : 'en'})` : '')
+        );
+      }
+    }
+
     await prisma.$transaction(async (tx) => {
       await tx.scheduleEntry.deleteMany({ where: { scheduleId: schedule.id } });
       if (entries.length === 0) return;
