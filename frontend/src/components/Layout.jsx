@@ -52,9 +52,16 @@ export default function Layout() {
         : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
     }`;
 
+  const mobileLinkClass = ({ isActive }) =>
+    `block px-4 py-3 rounded-lg text-base font-medium transition-colors ${
+      isActive
+        ? 'bg-slate-900 text-white'
+        : 'text-slate-700 hover:bg-slate-100 active:bg-slate-200'
+    }`;
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm safe-top safe-x">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
 
           {/* Logo */}
@@ -133,17 +140,26 @@ export default function Layout() {
 
         {/* Mobile menu */}
         {menuOpen && (
-          <nav className="lg:hidden px-4 py-3 space-y-1 border-t border-slate-200 bg-white">
+          <nav className="lg:hidden px-3 pt-2 pb-3 space-y-1 border-t border-slate-200 bg-white">
             {navLinks.map((l) => (
-              <NavLink key={l.to} to={l.to} className={linkClass} end={l.to === '/dashboard'} onClick={() => setMenuOpen(false)}>
+              <NavLink key={l.to} to={l.to} className={mobileLinkClass} end={l.to === '/dashboard'} onClick={() => setMenuOpen(false)}>
                 {l.label}
               </NavLink>
             ))}
+            <div className="pt-2 mt-2 border-t border-slate-100 px-1 flex items-center gap-3">
+              <div className="avatar w-9 h-9 text-sm font-bold shrink-0">
+                {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+              </div>
+              <div className="text-sm leading-tight">
+                <div className="font-semibold text-slate-900">{user?.firstName} {user?.lastName}</div>
+                <div className="text-xs text-slate-400">{isManager ? 'Manager' : 'Medewerker'}</div>
+              </div>
+            </div>
           </nav>
         )}
       </header>
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 safe-bottom safe-x">
         <Outlet />
       </main>
     </div>

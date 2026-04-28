@@ -99,25 +99,28 @@ export default function ManagerAvailability() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-3 mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">Beschikbaarheid medewerkers</h1>
-        <div className="flex-1" />
-        <select
-          value={selectedId}
-          onChange={(e) => setSelectedId(e.target.value)}
-          className="input max-w-xs"
-        >
-          {employees.map((u) => (
-            <option key={u.id} value={u.id}>
-              {u.firstName} {u.lastName}
-            </option>
-          ))}
-        </select>
-        <MonthSelector year={year} month={month} onChange={(y, m) => setYM({ year: y, month: m })} />
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-slate-900 mb-3">Beschikbaarheid medewerkers</h1>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <select
+            value={selectedId}
+            onChange={(e) => setSelectedId(e.target.value)}
+            className="input sm:max-w-xs"
+          >
+            {employees.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.firstName} {u.lastName}
+              </option>
+            ))}
+          </select>
+          <div className="sm:ml-auto">
+            <MonthSelector year={year} month={month} onChange={(y, m) => setYM({ year: y, month: m })} />
+          </div>
+        </div>
       </div>
 
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-4 text-xs text-slate-500">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-500">
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-green-500 inline-block" /> beschikbaar
           </span>

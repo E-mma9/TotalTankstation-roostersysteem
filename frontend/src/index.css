@@ -13,7 +13,19 @@ body,
     @apply bg-slate-50 text-slate-900 antialiased;
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   }
+
+  /* Vermijd iOS auto-zoom op input-focus (font moet >=16px op mobiel) */
+  @media (max-width: 639px) {
+    input, select, textarea {
+      font-size: 16px !important;
+    }
+  }
 }
+
+/* Safe-area insets voor PWA op iPhone (notch/dynamic island) */
+.safe-top    { padding-top: env(safe-area-inset-top); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+.safe-x      { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
 
 @layer components {
 
